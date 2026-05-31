@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SALIMAHTOOLS GAME</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div id="menu">
+
+    <h1 id="gameLogo">MAKTAB'ARCADE</h1>
+
+    <p id="subtitle">
+        Apprends l'informatique en jouant !
+    </p>
+
+    <button id="playButton">JOUER</button>
+
+    <div id="arrowHint"></div>
+
+</div>
+
+<div id="retroCursor"></div>
+
+<!-- BACKGROUND ARCADE -->
+
+<div id="arcadeBackground">
+
+    <div id="grid"></div>
+
+    <div class="star s1"></div>
+    <div class="star s2"></div>
+    <div class="star s3"></div>
+    <div class="star s4"></div>
+    <div class="star s5"></div>
+
+    <div id="scanlines"></div>
+
+</div>
+
+<!-- PARTICULES -->
+<div id="particles"></div>
+
+<div id="gameWindow">
+
+    <h2 id="title">Niveau 1</h2>
+
+    <div id="instruction"></div>
+
+    <p id="score">Score : 0</p>
+
+    <div id="gameArea">
+
+        <!-- BOUTON SUIVANT -->
+        <button id="nextBtn">Suivant ➜</button>
+
+        <!-- FROMAGE -->
+        <div id="cheese"></div>
+
+        <!-- POMMES -->
+        <div id="redApple" class="apple"></div>
+        <div id="greenApple" class="apple"></div>
+
+        <!-- OBJETS -->
+        <div id="redObject" class="object"></div>
+        <div id="greenObject" class="object"></div>
+        <div id="blueObject" class="object"></div>
+
+        <!-- SACS -->
+        <div id="redBag" class="bag"></div>
+        <div id="greenBag" class="bag"></div>
+        <div id="blueBag" class="bag"></div>
+        <div id="yellowBag" class="bag"></div>
+
+        <!-- INPUT -->
+        <input id="textInput" type="text" autocomplete="off" spellcheck="false">
+
+        <button id="validateBtn">Valider</button>
+
+        <!-- KEYBOARD -->
+        <div id="keyboard"></div>
+        <div id="objectCounter" style="display:none"></div>
+
+    </div>
+
+</div>
+
+<!-- SCORE FLOAT -->
+<div id="scorePanel">
+
+    <div id="scoreTitle">SCORE</div>
+
+    <div id="floatingScore">
+        0
+    </div>
+    
+</div>
+
+<!-- XP PANEL -->
+<div id="xpPanel">
+
+    <div id="rankText">
+        Débutant
+    </div>
+
+    <div id="xpBarContainer">
+        <div id="xpBar"></div>
+    </div>
+
+</div>
+
+<div id="levelUpText">LEVEL UP !</div>
+
+<!-- ÉCRAN VICTOIRE -->
+<div id="victoryScreen" style="display:none">
+    <div id="victoryContent">
+        <div id="victoryPixel">🏆</div>
+        <h1 id="victoryTitle">VICTOIRE !</h1>
+        <p id="victoryScore">Score final : <span id="finalScore">0</span> pts</p>
+        <div id="bestScorePanel">
+            <span>🥇 Meilleur score : </span>
+            <span id="bestScoreValue">0</span> pts
+        </div>
+        <button id="replayBtn">🔄 Rejouer</button>
+        <div id="confetti"></div>
+    </div>
+</div>
+
+<script src="./js/levels.js"></script>
+<script src="./js/ui.js"></script>
+<script src="script.js"></script>
+<script src="./js/events.js"></script>
+
+</body>
+</html>
