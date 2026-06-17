@@ -3,58 +3,139 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>SALIMAHTOOLS GAME</title>
+    <title>MAKTAB'ARCADE</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
+<!-- =====================
+     MENU PRINCIPAL
+===================== -->
 <div id="menu">
-
     <h1 id="gameLogo">MAKTAB'ARCADE</h1>
-
-    <p id="subtitle">
-        Apprends l'informatique en jouant !
-    </p>
-
-    <button id="playButton">JOUER</button>
-
+    <p id="subtitle">Apprends l'informatique en jouant !</p>
     <div id="arrowHint"></div>
+    <button id="playButton">JOUER</button>
+    <button id="profileBtn">📊 MON PROFIL</button>
+</div>
 
+<!-- =====================
+     ÉCRAN PROFIL JOUEUR
+===================== -->
+<div id="profileScreen" style="display:none">
+    <div id="profileBox">
+        <button id="profileCloseBtn">✕</button>
+        <div id="profileHeader">
+            <div id="profileIcon">🏆</div>
+            <div id="profileTitle">MON PROFIL</div>
+        </div>
+
+        <div id="profileStatsGrid">
+            <div class="profileStatCard">
+                <div class="profileStatLabel">Meilleur score</div>
+                <div class="profileStatValue" id="profileBestScore">0</div>
+            </div>
+            <div class="profileStatCard">
+                <div class="profileStatLabel">Niveau max atteint</div>
+                <div class="profileStatValue" id="profileBestLevel">0</div>
+            </div>
+            <div class="profileStatCard">
+                <div class="profileStatLabel">Parties jouées</div>
+                <div class="profileStatValue" id="profileGamesPlayed">0</div>
+            </div>
+            <div class="profileStatCard">
+                <div class="profileStatLabel">Rang le + haut</div>
+                <div class="profileStatValue" id="profileBestRank">-</div>
+            </div>
+        </div>
+
+        <div id="profileHistoryTitle">HISTORIQUE DES PARTIES</div>
+        <div id="profileHistoryList"></div>
+
+        <div id="profileEmptyState" style="display:none">
+            Aucune partie enregistrée encore.<br>Joue une partie pour voir ton historique ici !
+        </div>
+
+        <button id="clearHistoryBtn">🗑️ Vider l'historique</button>
+    </div>
+</div>
+
+<!-- =====================
+     MODALE CONFIRMATION VIDAGE HISTORIQUE
+===================== -->
+<div id="clearHistoryModal" style="display:none">
+    <div id="clearHistoryBox">
+        <div id="clearHistoryIcon">⚠️</div>
+        <div id="clearHistoryTitle">VIDER L'HISTORIQUE ?</div>
+        <div id="clearHistoryText">
+            Toutes tes parties passées, ton meilleur score et tes statistiques seront
+            <strong>définitivement effacés</strong>.<br>Cette action est irréversible.
+        </div>
+        <div id="clearHistoryBtns">
+            <button id="clearHistoryConfirmBtn">🗑️ OUI, TOUT EFFACER</button>
+            <button id="clearHistoryCancelBtn">↩ ANNULER</button>
+        </div>
+    </div>
 </div>
 
 <div id="retroCursor"></div>
 
-<!-- BACKGROUND ARCADE -->
-
+<!-- =====================
+     FOND ARCADE
+===================== -->
 <div id="arcadeBackground">
-
     <div id="grid"></div>
-
     <div class="star s1"></div>
     <div class="star s2"></div>
     <div class="star s3"></div>
     <div class="star s4"></div>
     <div class="star s5"></div>
-
     <div id="scanlines"></div>
-
 </div>
 
 <!-- PARTICULES -->
 <div id="particles"></div>
 
+<!-- =====================
+     FENETRE DE JEU
+===================== -->
 <div id="gameWindow">
 
+    <!-- CHRONO ARCADE (positionné par rapport à gameWindow, près de la gameArea) -->
+    <div id="timerPanel" style="display:none">
+        <div id="timerLabel">TEMPS</div>
+        <div id="timerArc">
+            <svg id="timerSVG" viewBox="0 0 120 120" width="100" height="100">
+                <circle id="timerTrack" cx="60" cy="60" r="50"
+                    fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+                <circle id="timerRing" cx="60" cy="60" r="50"
+                    fill="none" stroke="#00ffff" stroke-width="8"
+                    stroke-dasharray="314" stroke-dashoffset="0"
+                    stroke-linecap="round"
+                    transform="rotate(-90 60 60)"/>
+                <text id="timerNumber" x="60" y="60"
+                    text-anchor="middle" dominant-baseline="central"
+                    font-size="28" font-weight="bold"
+                    font-family="monospace" fill="white">--</text>
+            </svg>
+        </div>
+        <div id="timerBonusBar">
+            <div id="timerBonusLabel">BONUS</div>
+            <div id="timerBonusTrack">
+                <div id="timerBonusFill"></div>
+            </div>
+            <div id="timerBonusValue">+<span id="timerBonusNum">50</span> pts</div>
+        </div>
+    </div>
+
     <h2 id="title">Niveau 1</h2>
-
     <div id="instruction"></div>
-
     <p id="score">Score : 0</p>
 
     <div id="gameArea">
 
-        <!-- BOUTON SUIVANT -->
+        <!-- BOUTON SUIVANT (niveau 1) -->
         <button id="nextBtn">Suivant ➜</button>
 
         <!-- FROMAGE -->
@@ -64,7 +145,7 @@
         <div id="redApple" class="apple"></div>
         <div id="greenApple" class="apple"></div>
 
-        <!-- OBJETS -->
+        <!-- OBJETS COLORÉS -->
         <div id="redObject" class="object"></div>
         <div id="greenObject" class="object"></div>
         <div id="blueObject" class="object"></div>
@@ -75,46 +156,101 @@
         <div id="blueBag" class="bag"></div>
         <div id="yellowBag" class="bag"></div>
 
-        <!-- INPUT -->
-        <input id="textInput" type="text" autocomplete="off" spellcheck="false">
+        <!-- SAISIE TEXTE — regroupée dans un wrapper pour éviter toute superposition -->
+        <div id="inputZone">
+            <div id="inputCursor">▮</div>
+            <input id="textInput" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="ÉCRIS ICI..." />
+            <button id="validateBtn">✔ VALIDER</button>
+        </div>
 
-        <button id="validateBtn">Valider</button>
-
-        <!-- KEYBOARD -->
+        <!-- CLAVIER VISUEL -->
         <div id="keyboard"></div>
-        <div id="objectCounter" style="display:none"></div>
 
+        <!-- COMPTEUR D'OBJETS / TIMER -->
+        <div id="objectCounter"></div>
+
+        <!-- FENETRE AIDE CONTEXTUELLE -->
+        <div id="tutorialBox"></div>
+
+        <!-- CHECKLIST ÉTAPES -->
+        <div id="stepChecklist"></div>
+
+    </div><!-- fin #gameArea -->
+
+    <!-- OVERLAY TUTORIEL ANIMÉ -->
+    <div id="tutorialOverlay" style="display:none">
+        <div id="tutorialSVG"></div>
+        <div id="tutorialLabel"></div>
+        <div id="tutorialSkip">Cliquer pour passer ▶</div>
     </div>
 
-</div>
+</div><!-- fin #gameWindow -->
 
-<!-- SCORE FLOAT -->
+<!-- =====================
+     PANNEAU SCORE
+===================== -->
 <div id="scorePanel">
-
     <div id="scoreTitle">SCORE</div>
-
-    <div id="floatingScore">
-        0
-    </div>
-    
+    <div id="floatingScore">0</div>
+    <div id="recordToBeat">🏆 <span id="recordToBeatValue">0</span></div>
 </div>
 
-<!-- XP PANEL -->
+<!-- =====================
+     PANNEAU XP / RANG
+===================== -->
 <div id="xpPanel">
-
-    <div id="rankText">
-        Débutant
-    </div>
-
+    <div id="rankText">Débutant</div>
     <div id="xpBarContainer">
         <div id="xpBar"></div>
     </div>
-
 </div>
+
+<!-- =====================
+     PANNEAU VIES + RELANCE
+===================== -->
+<div id="livesPanel">
+    <div id="livesTitle">VIES</div>
+    <div id="livesDisplay">❤️ × <span id="livesCount">0</span></div>
+    <button id="useLifeBtn" title="Utiliser une vie pour relancer sans perdre de points">
+        🛡️ Vie
+    </button>
+    <button id="restartBtn" title="Relancer le niveau (-10 pts)">
+        🔄 -10pts
+    </button>
+    <button id="deleteSaveBtn" title="Effacer toute la progression">
+        🗑️ Effacer
+    </button>
+</div>
+
+<!-- =====================
+     MODALE CONFIRMATION EFFACEMENT
+===================== -->
+<div id="deleteSaveModal" style="display:none">
+    <div id="deleteSaveBox">
+        <div id="deleteSaveIcon">⚠️</div>
+        <div id="deleteSaveTitle">EFFACER LA PROGRESSION ?</div>
+        <div id="deleteSaveText">
+            Ton niveau, ton score et tes vies seront <strong>définitivement perdus</strong>.<br>
+            Cette action est irréversible.
+        </div>
+        <div id="deleteSaveBtns">
+            <button id="deleteSaveConfirmBtn">🗑️ OUI, TOUT EFFACER</button>
+            <button id="deleteSaveCancelBtn">↩ ANNULER</button>
+        </div>
+    </div>
+</div>
+
+<!-- =====================
+     COMBO DISPLAY
+===================== -->
+<div id="comboDisplay" style="display:none"></div>
 
 <div id="levelUpText">LEVEL UP !</div>
 
-<!-- ÉCRAN VICTOIRE -->
+<!-- =====================
+     ÉCRAN VICTOIRE
+===================== -->
 <div id="victoryScreen" style="display:none">
     <div id="victoryContent">
         <div id="victoryPixel">🏆</div>
@@ -129,9 +265,36 @@
     </div>
 </div>
 
-<script src="./js/levels.js"></script>
+<!-- =====================
+     ANNONCE PÉNALITÉS
+===================== -->
+<div id="penaltyAnnounce">
+    <div id="penaltyFist">👊</div>
+    <div id="penaltyBanner">ATTENTION !</div>
+    <div id="penaltySubtitle">LES ERREURS COÛTENT DES POINTS !</div>
+</div>
+
+<!-- =====================
+     SCRIPTS
+     ORDRE OBLIGATOIRE :
+     1. Données
+     2. Sons
+     3. Niveaux
+     4. Interface
+     5. Moteur
+     6. Événements
+===================== -->
+<script src="./js/config.js"></script>
+<script src="./js/save.js"></script>
+<script src="./js/sounds.js"></script>
+<script src="./js/levels/levels-01-10.js"></script>
+<script src="./js/levels/levels-11-20.js"></script>
+<script src="./js/levels/levels-21-30.js"></script>
+<script src="./js/levels/levels-31-40.js"></script>
+<script src="./js/levels/levels-41-50.js"></script>
+<script src="./js/levels/index.js"></script>
 <script src="./js/ui.js"></script>
-<script src="script.js"></script>
+<script src="./js/game.js"></script>
 <script src="./js/events.js"></script>
 
 </body>
