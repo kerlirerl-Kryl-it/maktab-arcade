@@ -331,13 +331,22 @@ function showPenaltyAnnounce() {
         clearTimeout(autoHide);
 
         setTimeout(() => el.classList.remove("hide"), 300);
+
+        // Le popup masquait le clavier au niveau 21 : on s'assure que
+        // le suivi de la souris est bien actif une fois qu'il disparaît,
+        // sans attendre que le joueur bouge la souris de lui-même.
+        if (level === 21) {
+            handleLevel21();
+        }
     }
 
     // Fermer au clic n'importe où, ou en appuyant sur une touche
     document.addEventListener("click", dismiss);
     document.addEventListener("keydown", dismiss);
 
-    const autoHide = setTimeout(dismiss, 15000);
+    // Auto-fermeture plus courte (5s) pour ne pas bloquer trop longtemps
+    // l'accès visuel au clavier sur ce niveau précis
+    const autoHide = setTimeout(dismiss, 5000);
 }
 
 // ============================================================

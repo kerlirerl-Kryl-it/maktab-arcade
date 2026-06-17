@@ -514,6 +514,16 @@ function handleLevel21() {
     let progress = 0;
 
     level21Handler = function(e) {
+
+        // Le popup "ATTENTION les erreurs coûtent des points" est affiché
+        // par-dessus le clavier : on ignore le mouvement tant qu'il est là,
+        // sinon la progression peut se déclencher sur une zone masquée.
+        if (penaltyAnnounceActive) {
+            progress = 0;
+            keyboard.style.filter = "none";
+            return;
+        }
+
         const rect   = keyboard.getBoundingClientRect();
         const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
                        e.clientY >= rect.top  && e.clientY <= rect.bottom;
