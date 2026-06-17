@@ -194,22 +194,178 @@ body {
     background-repeat: no-repeat;
 }
 
+/* BOUTON SUIVANT (niveau 1)
 #nextBtn {
     position: absolute;
     bottom: 20px;
     right: 20px;
-    padding: 12px 20px;
-    background: #ffcc00;
-    border: none;
-    border-radius: 10px;
+
+    padding: 14px 28px;
     font-size: 18px;
-    font-weight: bold;
+    font-weight: 900;
+    letter-spacing: 2px;
+
+    color: #001018;
+    background: linear-gradient(180deg, #00ffff, #00c2ff, #008cff);
+
+    border: 2px solid rgba(0,255,255,0.6);
+    border-radius: 14px;
+
     cursor: pointer;
-    display: none;
     z-index: 1000;
+
+    box-shadow:
+        0 0 10px rgba(0,255,255,0.6),
+        0 0 25px rgba(0,255,255,0.4),
+        inset 0 -3px 0 rgba(0,0,0,0.3);
+
+    text-shadow: 0 0 6px rgba(255,255,255,0.6);
+
+    transition: all 0.2s ease;
+    animation: nextBtnPulse 2s infinite;
 }
 
 #nextBtn:hover { transform: scale(1.05); }
+
+@keyframes nextBtnPulse {
+    0%   { transform: scale(1); filter: brightness(1); }
+    50%  { transform: scale(1.05); filter: brightness(1.2); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+*/
+/*BOUTON SUIVANT 2*/
+.arcade-next {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+
+    padding: 14px 36px;
+
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 3px;
+
+    color: #1a0000;
+    text-transform: uppercase;
+
+    background: linear-gradient(180deg, #ffe600, #ffb300, #ff3c00);
+
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+
+    cursor: pointer;
+    z-index: 1000;
+
+    box-shadow:
+        0 0 10px rgba(255, 200, 0, 0.6),
+        0 0 25px rgba(255, 60, 0, 0.4),
+        inset 0 -4px 0 rgba(0, 0, 0, 0.35);
+
+    text-shadow:
+        0 0 6px rgba(255, 255, 255, 0.6);
+
+    transition: 0.15s ease;
+
+    animation: arcadePulseWarm 1.8s infinite;
+}
+
+@keyframes arcadePulseWarm {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    50% {
+        transform: scale(1.05);
+        filter: brightness(1.25);
+    }
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+arcade-next:hover {
+    transform: scale(1.12) rotate(-1deg);
+
+    box-shadow:
+        0 0 15px rgba(255, 230, 0, 0.8),
+        0 0 40px rgba(255, 80, 0, 0.6),
+        0 0 60px rgba(255, 0, 0, 0.3);
+
+    filter: brightness(1.35);
+}
+
+.arcade-next:active {
+    transform: scale(0.95);
+
+    box-shadow:
+        0 0 8px rgba(255, 200, 0, 0.8),
+        inset 0 4px 10px rgba(0, 0, 0, 0.5);
+
+    filter: brightness(0.9);
+}
+
+.arcade-next {
+    overflow: hidden;
+}
+
+.arcade-next::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        transparent,
+        rgba(255, 255, 255, 0.6),
+        transparent
+    );
+    transform: skewX(-20deg);
+}
+
+.arcade-next:hover::after {
+    animation: scanWarm 0.5s ease;
+}
+
+@keyframes scanWarm {
+    0% { left: -120%; }
+    100% { left: 120%; }
+}
+
+
+.electric-spark {
+    position: absolute;
+    width: 2px;
+    height: 18px;
+
+    background: linear-gradient(180deg, #00e5ff, #ffffff, #00aaff);
+    box-shadow:
+        0 0 6px #00e5ff,
+        0 0 12px #00aaff;
+
+    border-radius: 2px;
+    opacity: 0;
+    pointer-events: none;
+
+    animation: sparkFlash 0.35s ease-out forwards;
+}
+
+@keyframes sparkFlash {
+    0% {
+        opacity: 0;
+        transform: scaleY(0.2) rotate(0deg);
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: scaleY(1.2) rotate(var(--angle));
+    }
+}
 
 /* FROMAGE */
 #cheese {
@@ -310,7 +466,7 @@ body {
     left: 80px;
 }
 
-#greenbag {
+#greenBag {
     background-image: url("./images/greenbag.png");
     background-size: contain;
     background-position: center;
@@ -535,19 +691,31 @@ body {
     margin: 10px 0;
     text-align: left;
     letter-spacing: 2px;
+    position: relative;
+    padding-top: 10px;
 }
 
 #instruction::before {
     content: "▶ MISSION — NIVEAU " attr(data-level);
-    background: #ff00ff;
-    color: #000000;
+    display: block;
+    margin-bottom: 14px; /* 👈 espace avec le texte */
+    padding: 6px 14px;
+
+    background: linear-gradient(90deg, #ff00ff, #00ffff);
+    color: #000;
+
     font-size: 12px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
+    font-weight: 900;
     letter-spacing: 2px;
-    margin-bottom: 12px;
-    display: inline-block;
+
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2);
+
+    box-shadow:
+        0 0 10px rgba(255,0,255,0.4),
+        0 0 20px rgba(0,255,255,0.2);
+
+    text-align: center;
 }
 
 #score { display: none; }
@@ -898,7 +1066,7 @@ input, textarea {
     gap: 16px;
     cursor: pointer;
     box-sizing: border-box;
-    padding-bottom: 120px;
+    padding-bottom: 30px;
 }
 
 #tutorialLabel {
