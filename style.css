@@ -192,178 +192,99 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    transition: height 0.3s ease, border 0.3s ease, opacity 0.3s ease;
 }
 
-/* BOUTON SUIVANT (niveau 1)
+/* Niveau 1 : on cache la zone de jeu, seule l'instruction reste visible */
+#gameArea.hidden {
+    height: 0;
+    border: none;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
 #nextBtn {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-
-    padding: 14px 28px;
-    font-size: 18px;
-    font-weight: 900;
-    letter-spacing: 2px;
-
-    color: #001018;
-    background: linear-gradient(180deg, #00ffff, #00c2ff, #008cff);
-
-    border: 2px solid rgba(0,255,255,0.6);
-    border-radius: 14px;
-
-    cursor: pointer;
-    z-index: 1000;
-
-    box-shadow:
-        0 0 10px rgba(0,255,255,0.6),
-        0 0 25px rgba(0,255,255,0.4),
-        inset 0 -3px 0 rgba(0,0,0,0.3);
-
-    text-shadow: 0 0 6px rgba(255,255,255,0.6);
-
-    transition: all 0.2s ease;
-    animation: nextBtnPulse 2s infinite;
-}
-
-#nextBtn:hover { transform: scale(1.05); }
-
-@keyframes nextBtnPulse {
-    0%   { transform: scale(1); filter: brightness(1); }
-    50%  { transform: scale(1.05); filter: brightness(1.2); }
-    100% { transform: scale(1); filter: brightness(1); }
-}
-*/
-/*BOUTON SUIVANT 2*/
-.arcade-next {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-
+    position: relative;
+    display: none;
+    margin: 20px auto 10px;
     padding: 14px 36px;
 
     font-family: 'Orbitron', sans-serif;
     font-size: 20px;
     font-weight: 900;
     letter-spacing: 3px;
-
-    color: #1a0000;
     text-transform: uppercase;
 
-    background: linear-gradient(180deg, #ffe600, #ffb300, #ff3c00);
+    color: #1a0000;
+    text-shadow:
+        0 1px 0 rgba(255,255,255,0.4),
+        0 0 8px rgba(255,255,255,0.3);
 
-    border: 3px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(180deg,
+        #ffe600 0%,
+        #ffb300 55%,
+        #ff5500 100%
+    );
+
+    border: 3px solid rgba(255,255,255,0.3);
+    border-bottom: 3px solid rgba(0,0,0,0.3);
     border-radius: 12px;
 
     cursor: pointer;
+    display: none;
     z-index: 1000;
 
     box-shadow:
-        0 0 10px rgba(255, 200, 0, 0.6),
-        0 0 25px rgba(255, 60, 0, 0.4),
-        inset 0 -4px 0 rgba(0, 0, 0, 0.35);
+        0 0 12px rgba(255,200,0,0.7),
+        0 0 28px rgba(255,80,0,0.4),
+        0 0 55px rgba(255,30,0,0.2),
+        inset 0 -5px 0 rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.25);
 
-    text-shadow:
-        0 0 6px rgba(255, 255, 255, 0.6);
+    animation: arcadePulseWarm 1.8s ease-in-out infinite;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
 
-    transition: 0.15s ease;
+    /* Scanline légère pour l'effet borne arcade */
+    background-image:
+        repeating-linear-gradient(
+            to bottom,
+            transparent,
+            transparent 2px,
+            rgba(0,0,0,0.04) 2px,
+            rgba(0,0,0,0.04) 4px
+        ),
+        linear-gradient(180deg, #ffe600 0%, #ffb300 55%, #ff5500 100%);
+}
 
-    animation: arcadePulseWarm 1.8s infinite;
+#nextBtn:hover {
+    transform: scale(1.12) rotate(-1deg);
+    filter: brightness(1.3);
+    box-shadow:
+        0 0 18px rgba(255,230,0,0.9),
+        0 0 45px rgba(255,80,0,0.7),
+        0 0 70px rgba(255,20,0,0.35),
+        inset 0 -5px 0 rgba(0,0,0,0.3);
+}
+
+#nextBtn:active {
+    transform: scale(0.95);
+    filter: brightness(0.88);
+    box-shadow:
+        0 0 8px rgba(255,200,0,0.8),
+        inset 0 4px 10px rgba(0,0,0,0.45);
+    border-bottom-width: 1px;
+    padding-top: 16px;   /* simule l'enfoncement */
 }
 
 @keyframes arcadePulseWarm {
-    0% {
+    0%,100% {
         transform: scale(1);
         filter: brightness(1);
     }
     50% {
         transform: scale(1.05);
-        filter: brightness(1.25);
-    }
-    100% {
-        transform: scale(1);
-        filter: brightness(1);
-    }
-}
-
-arcade-next:hover {
-    transform: scale(1.12) rotate(-1deg);
-
-    box-shadow:
-        0 0 15px rgba(255, 230, 0, 0.8),
-        0 0 40px rgba(255, 80, 0, 0.6),
-        0 0 60px rgba(255, 0, 0, 0.3);
-
-    filter: brightness(1.35);
-}
-
-.arcade-next:active {
-    transform: scale(0.95);
-
-    box-shadow:
-        0 0 8px rgba(255, 200, 0, 0.8),
-        inset 0 4px 10px rgba(0, 0, 0, 0.5);
-
-    filter: brightness(0.9);
-}
-
-.arcade-next {
-    overflow: hidden;
-}
-
-.arcade-next::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -120%;
-    width: 60%;
-    height: 100%;
-    background: linear-gradient(
-        120deg,
-        transparent,
-        rgba(255, 255, 255, 0.6),
-        transparent
-    );
-    transform: skewX(-20deg);
-}
-
-.arcade-next:hover::after {
-    animation: scanWarm 0.5s ease;
-}
-
-@keyframes scanWarm {
-    0% { left: -120%; }
-    100% { left: 120%; }
-}
-
-
-.electric-spark {
-    position: absolute;
-    width: 2px;
-    height: 18px;
-
-    background: linear-gradient(180deg, #00e5ff, #ffffff, #00aaff);
-    box-shadow:
-        0 0 6px #00e5ff,
-        0 0 12px #00aaff;
-
-    border-radius: 2px;
-    opacity: 0;
-    pointer-events: none;
-
-    animation: sparkFlash 0.35s ease-out forwards;
-}
-
-@keyframes sparkFlash {
-    0% {
-        opacity: 0;
-        transform: scaleY(0.2) rotate(0deg);
-    }
-    30% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0;
-        transform: scaleY(1.2) rotate(var(--angle));
+        filter: brightness(1.22);
     }
 }
 
@@ -691,31 +612,19 @@ arcade-next:hover {
     margin: 10px 0;
     text-align: left;
     letter-spacing: 2px;
-    position: relative;
-    padding-top: 10px;
 }
 
 #instruction::before {
     content: "▶ MISSION — NIVEAU " attr(data-level);
-    display: block;
-    margin-bottom: 14px; /* 👈 espace avec le texte */
-    padding: 6px 14px;
-
-    background: linear-gradient(90deg, #ff00ff, #00ffff);
-    color: #000;
-
+    background: #ff00ff;
+    color: #000000;
     font-size: 12px;
-    font-weight: 900;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
     letter-spacing: 2px;
-
-    border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.2);
-
-    box-shadow:
-        0 0 10px rgba(255,0,255,0.4),
-        0 0 20px rgba(0,255,255,0.2);
-
-    text-align: center;
+    margin-bottom: 12px;
+    display: inline-block;
 }
 
 #score { display: none; }
@@ -1066,7 +975,7 @@ input, textarea {
     gap: 16px;
     cursor: pointer;
     box-sizing: border-box;
-    padding-bottom: 30px;
+    padding-bottom: 120px;
 }
 
 #tutorialLabel {
@@ -1220,7 +1129,7 @@ input, textarea {
     background: rgba(20,20,30,0.75);
     backdrop-filter: blur(5px);
     border: 2px solid rgba(255,255,255,0.2);
-    box-shadow: 0 0 15px rgba(255,60,172,0.3);
+    box-shadow: 0 0 15px rgba(0,255,255,0.2);
     z-index: 9999;
     color: white;
     display: none;
@@ -1229,24 +1138,16 @@ input, textarea {
 #livesTitle {
     font-size: 14px;
     letter-spacing: 2px;
-    margin-bottom: 6px;
-    color: #ff3cac;
-    text-align: center;
-}
-
-#livesDisplay {
-    font-size: 22px;
-    font-weight: bold;
-    color: white;
-    text-align: center;
     margin-bottom: 10px;
+    color: #00ffff;
+    text-align: center;
 }
 
-#useLifeBtn, #restartBtn {
+#restartBtn {
     display: block;
     width: 100%;
-    padding: 8px 0;
-    margin-top: 6px;
+    padding: 9px 0;
+    margin-top: 0;
     border: none;
     border-radius: 10px;
     font-size: 13px;
@@ -1254,28 +1155,14 @@ input, textarea {
     cursor: pointer;
     letter-spacing: 1px;
     transition: 0.2s;
-}
-
-#useLifeBtn {
-    background: linear-gradient(180deg, #ff3cac, #784ba0);
-    color: white;
-    box-shadow: 0 0 8px rgba(255,60,172,0.5);
-}
-
-#useLifeBtn:hover:not(:disabled) {
-    transform: scale(1.05);
-    box-shadow: 0 0 16px #ff3cac;
-}
-
-#restartBtn {
-    background: linear-gradient(180deg, #444, #222);
-    color: #ccc;
-    box-shadow: none;
+    background: linear-gradient(180deg, #00ffea, #00aaaa);
+    color: #001a1a;
+    box-shadow: 0 0 8px rgba(0,255,234,0.4);
 }
 
 #restartBtn:hover {
-    background: linear-gradient(180deg, #555, #333);
-    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 0 16px #00ffea;
 }
 
 /* =========================
@@ -2232,4 +2119,761 @@ input, textarea {
     color: white;
     border-color: rgba(255,255,255,0.4);
     background: rgba(255,255,255,0.1);
+}
+
+/* =========================
+   CURSEUR TYPEWRITER SUR LES INSTRUCTIONS
+========================= */
+
+.typeCursor {
+    display: inline-block;
+    color: #ff00ff;
+    font-weight: bold;
+    animation: typeCursorBlink 0.7s step-end infinite;
+    margin-left: 2px;
+    vertical-align: baseline;
+    text-shadow: 0 0 8px #ff00ff;
+}
+
+@keyframes typeCursorBlink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0; }
+}
+
+/* L'instruction est cliquable pour skip */
+#instruction {
+    cursor: pointer;
+}
+
+
+/* =========================
+   BADGE BONUS ACTIF (niveau en cours)
+========================= */
+
+#activeBonusBadge {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, rgba(0,255,255,0.15), rgba(255,0,255,0.1));
+    border: 2px solid #00ffff;
+    border-radius: 14px;
+    box-shadow: 0 0 16px rgba(0,255,255,0.4);
+    color: #00ffff;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    z-index: 9999;
+    backdrop-filter: blur(4px);
+    animation: activeBonusPulse 1.6s infinite;
+}
+
+@keyframes activeBonusPulse {
+    0%,100% { box-shadow: 0 0 12px rgba(0,255,255,0.35); }
+    50%      { box-shadow: 0 0 24px rgba(0,255,255,0.7), 0 0 40px rgba(0,255,255,0.2); }
+}
+
+/* =========================
+   OVERLAY D'ACTIVATION DE BONUS (plein écran)
+========================= */
+
+.bonusActivateOverlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 999995;
+    pointer-events: none;
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease;
+}
+
+.bonusActivateOverlay.show { opacity: 1; }
+.bonusActivateOverlay.hide { opacity: 0; }
+
+.bonusActivateGlow {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at center, color-mix(in srgb, var(--bonus-color) 18%, transparent), transparent 65%);
+    animation: bonusGlowPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes bonusGlowPulse {
+    0%,100% { opacity: 0.6; }
+    50%      { opacity: 1; }
+}
+
+.bonusActivateContent {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    background: rgba(8,8,18,0.88);
+    border: 3px solid currentColor;
+    border-radius: 24px;
+    padding: 34px 54px;
+    backdrop-filter: blur(6px);
+    animation: bonusContentPop 0.5s cubic-bezier(0.22,1.8,0.36,1);
+}
+
+@keyframes bonusContentPop {
+    0%   { transform: scale(0.4) rotate(-4deg); opacity: 0; }
+    60%  { transform: scale(1.1) rotate(2deg);  opacity: 1; }
+    100% { transform: scale(1)   rotate(0deg);  opacity: 1; }
+}
+
+.bonusActivateIcon {
+    font-size: 56px;
+    margin-bottom: 10px;
+    animation: bonusIconBounce 0.8s ease-in-out infinite;
+}
+
+@keyframes bonusIconBounce {
+    0%,100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-8px) scale(1.08); }
+}
+
+.bonusActivateLabel {
+    font-family: 'Orbitron', monospace;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+.bonusActivateDesc {
+    margin-top: 10px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 1px;
+}
+
+/* =========================
+   ❄️ EFFET GEL DU TEMPS
+========================= */
+
+.bonus-freeze .bonusActivateGlow {
+    background: radial-gradient(circle at center, rgba(102,204,255,0.25), transparent 70%);
+}
+
+.bonus-freeze .bonusActivateContent {
+    color: #66ccff;
+    box-shadow: 0 0 50px rgba(102,204,255,0.5), inset 0 0 30px rgba(102,204,255,0.1);
+}
+
+.bonusFrostCorners {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    opacity: 0.9;
+    animation: frostFadeIn 0.6s ease;
+}
+
+@keyframes frostFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 0.9; }
+}
+
+/* Givre qui recouvre les bords de l'écran pendant l'activation */
+.bonus-freeze::before,
+.bonus-freeze::after {
+    content: "❄️ ❄️ ❄️ ❄️ ❄️ ❄️ ❄️ ❄️";
+    position: absolute;
+    left: 0; right: 0;
+    font-size: 28px;
+    letter-spacing: 40px;
+    opacity: 0.5;
+    filter: drop-shadow(0 0 8px #66ccff);
+    animation: frostDrift 6s linear infinite;
+}
+
+.bonus-freeze::before { top: -10px; }
+.bonus-freeze::after   { bottom: -10px; transform: scaleX(-1); }
+
+@keyframes frostDrift {
+    0%   { transform: translateX(-5%); }
+    100% { transform: translateX(5%); }
+}
+
+/* =========================
+   🛡️ EFFET BOUCLIER
+========================= */
+
+.bonus-shield .bonusActivateGlow {
+    background: radial-gradient(circle at center, rgba(0,255,255,0.22), transparent 70%);
+}
+
+.bonus-shield .bonusActivateContent {
+    color: #00ffff;
+    box-shadow: 0 0 50px rgba(0,255,255,0.5), inset 0 0 30px rgba(0,255,255,0.1);
+}
+
+.bonusShieldRing {
+    position: absolute;
+    width: 340px;
+    height: 340px;
+    border: 4px solid #00ffff;
+    border-radius: 50%;
+    box-shadow: 0 0 30px #00ffff, inset 0 0 30px rgba(0,255,255,0.3);
+    animation: shieldRingExpand 1s ease-out infinite;
+    pointer-events: none;
+}
+
+@keyframes shieldRingExpand {
+    0%   { transform: scale(0.6); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* =========================
+   ⏳ EFFET RALENTISSEMENT
+========================= */
+
+.bonus-slowtime .bonusActivateGlow {
+    background: radial-gradient(circle at center, rgba(255,153,0,0.2), transparent 70%);
+}
+
+.bonus-slowtime .bonusActivateContent {
+    color: #ff9900;
+    box-shadow: 0 0 50px rgba(255,153,0,0.5), inset 0 0 30px rgba(255,153,0,0.1);
+}
+
+.bonusSlowtimeWave {
+    position: absolute;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, transparent, #ff9900, transparent);
+    animation: slowtimeWaveMove 1.6s ease-in-out infinite;
+    opacity: 0.7;
+}
+
+@keyframes slowtimeWaveMove {
+    0%   { transform: translateY(-200px) scaleX(0.5); opacity: 0; }
+    50%  { opacity: 0.8; }
+    100% { transform: translateY(200px) scaleX(1.3);  opacity: 0; }
+}
+
+/* =========================
+   ✨ EFFET DOUBLE XP
+========================= */
+
+.bonus-doubleXp .bonusActivateGlow {
+    background: radial-gradient(circle at center, rgba(255,234,0,0.25), transparent 70%);
+}
+
+.bonus-doubleXp .bonusActivateContent {
+    color: #ffea00;
+    box-shadow: 0 0 50px rgba(255,234,0,0.5), inset 0 0 30px rgba(255,234,0,0.1);
+}
+
+.bonusXpBurst {
+    position: absolute;
+    font-size: 30px;
+    animation: xpBurstSpin 1.4s ease-in-out infinite;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 10px #ffea00);
+}
+
+@keyframes xpBurstSpin {
+    0%   { transform: scale(0.7) rotate(0deg); }
+    50%  { transform: scale(1.3) rotate(180deg); }
+    100% { transform: scale(0.7) rotate(360deg); }
+}
+
+/* =========================
+   PANNEAU CHRONO : ÉTATS GEL / RALENTI
+========================= */
+
+#timerPanel.frozen {
+    border-color: #66ccff;
+    box-shadow: 0 0 24px rgba(102,204,255,0.6), inset 0 0 24px rgba(102,204,255,0.15);
+    animation: timerFrozenPulse 1.4s ease-in-out infinite;
+}
+
+#timerPanel.frozen #timerRing {
+    stroke: #66ccff !important;
+    filter: drop-shadow(0 0 6px #66ccff);
+}
+
+#timerPanel.frozen::after {
+    content: "❄️";
+    position: absolute;
+    top: -14px;
+    right: -10px;
+    font-size: 22px;
+    animation: frostIconSpin 3s linear infinite;
+    filter: drop-shadow(0 0 6px #66ccff);
+}
+
+@keyframes timerFrozenPulse {
+    0%,100% { box-shadow: 0 0 18px rgba(102,204,255,0.5), inset 0 0 18px rgba(102,204,255,0.1); }
+    50%      { box-shadow: 0 0 32px rgba(102,204,255,0.8), inset 0 0 28px rgba(102,204,255,0.2); }
+}
+
+@keyframes frostIconSpin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#timerPanel.slowed {
+    border-color: #ff9900;
+    box-shadow: 0 0 20px rgba(255,153,0,0.5), inset 0 0 20px rgba(255,153,0,0.1);
+}
+
+#timerPanel.slowed #timerRing {
+    stroke: #ff9900 !important;
+    filter: drop-shadow(0 0 6px #ff9900);
+}
+
+#timerPanel.slowed::after {
+    content: "⏳";
+    position: absolute;
+    top: -14px;
+    right: -10px;
+    font-size: 20px;
+    animation: slowedIconPulse 1s ease-in-out infinite;
+    filter: drop-shadow(0 0 6px #ff9900);
+}
+
+@keyframes slowedIconPulse {
+    0%,100% { transform: scale(1); }
+    50%      { transform: scale(1.2); }
+}
+
+/* =========================
+   TOOLTIP AU SURVOL DES BONUS (inventaire)
+========================= */
+
+.bonusItemTooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    width: 200px;
+    padding: 10px 12px;
+    background: rgba(5,5,15,0.97);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: normal;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.5;
+    text-align: left;
+    letter-spacing: 0.3px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 10000;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+
+/* Badge "EN ATTENTE" affiché sur le bouton */
+.bonusPendingBadge {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 2px 7px;
+    background: rgba(255, 234, 0, 0.18);
+    border: 1px solid #ffea00;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 900;
+    font-family: monospace;
+    color: #ffea00;
+    letter-spacing: 1px;
+    vertical-align: middle;
+}
+
+
+
+/* Flash doré sur le panneau score pendant le Double XP */
+@keyframes doubleXpFlashAnim {
+    0%   { box-shadow: 0 0 0px #ffea00; border-color: transparent; }
+    30%  { box-shadow: 0 0 30px #ffea00, 0 0 60px rgba(255,234,0,0.5);
+           border-color: #ffea00; }
+    70%  { box-shadow: 0 0 20px #ffea00, 0 0 40px rgba(255,0,255,0.3);
+           border-color: #ffea00; }
+    100% { box-shadow: 0 0 0px #ffea00; border-color: transparent; }
+}
+
+#scorePanel.doubleXpFlash {
+    animation: doubleXpFlashAnim 2.4s ease-in-out forwards;
+    border: 2px solid transparent;
+}
+
+/* =========================
+   PANNEAU BONUS (CYBERPUNK CLEAN)
+========================= */
+
+#bonusPanel {
+    position: fixed;
+    bottom: 18px;              /* ⬅️ IMPORTANT : détaché du bas */
+    left: 50%;
+    transform: translateX(-50%);
+
+    max-width: 92vw;           /* ⬅️ un peu plus compact */
+    width: auto;
+
+    padding: 14px 18px;
+
+    border-radius: 14px;       /* ⬅️ plus "UI game" que 10px */
+
+    background: rgba(5, 8, 15, 0.72);
+    backdrop-filter: blur(18px);
+
+    border: 1px solid rgba(0, 255, 255, 0.25);
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.75),
+        0 0 25px rgba(0, 255, 255, 0.08),
+        inset 0 0 12px rgba(0, 255, 255, 0.05);
+
+    overflow: hidden;
+
+    z-index: 9999;
+}
+
+/* Scanline cyberpunk */
+#bonusPanel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 255, 255, 0.08),
+        transparent
+    );
+
+    animation: cyberScan 4s linear infinite;
+}
+
+#bonusPanel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    pointer-events: none;
+
+    box-shadow:
+        inset 0 0 25px rgba(0, 255, 255, 0.06);
+}
+
+@keyframes cyberScan {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* =========================
+   TITRE
+========================= */
+
+#bonusPanelTitle {
+    font-size: 12px;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+    text-align: center;
+
+    color: #ffea00;
+    text-shadow: 0 0 6px rgba(255,234,0,0.5);
+
+    font-family: 'Orbitron', monospace;
+}
+
+/* =========================
+   INVENTAIRE
+========================= */
+
+#bonusInventoryList {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* =========================
+   CARTE BONUS
+========================= */
+
+.bonusItem {
+    position: relative;
+
+    width: 150px;          /* ⬅️ avant ~120px */
+    min-height: 180px;     /* ⬅️ avant ~140px */
+
+    padding: 16px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(10, 14, 25, 0.7);
+
+    border: 1px solid rgba(0, 255, 255, 0.25);
+
+    border-radius: 10px;
+
+    box-shadow:
+        inset 0 0 12px rgba(0, 255, 255, 0.05),
+        0 12px 30px rgba(0, 0, 0, 0.6);
+
+    transition: 0.2s ease;
+}
+
+.bonusItem::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    border-radius: 10px;
+
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 255, 255, 0.12),
+        transparent
+    );
+
+    opacity: 0.6;
+
+    transform: translateX(-100%);
+    animation: cardScan 3.5s infinite;
+}
+
+@keyframes cardScan {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+}
+
+/* Hover effet cyberpunk */
+.bonusItem:hover {
+    transform: translateY(-6px) scale(1.03);
+
+    border-color: rgba(0, 255, 255, 0.7);
+
+    box-shadow:
+        0 0 20px rgba(0, 255, 255, 0.35),
+        0 20px 40px rgba(0, 0, 0, 0.7);
+}
+
+/* Bonus actif */
+.bonusItem.active {
+    border-color: #ffea00;
+    box-shadow: 0 0 18px rgba(255, 234, 0, 0.45);
+}
+
+/* Bonus boosté */
+.bonusItem.boosted {
+    border-color: #ffea00;
+    background: linear-gradient(135deg, rgba(255,234,0,0.18), rgba(255,180,0,0.08));
+    box-shadow: 0 0 12px rgba(255,234,0,0.4), 0 0 24px rgba(255,180,0,0.2);
+    animation: boostedCardGlow 1.8s ease-in-out infinite;
+}
+
+.bonusItem.boosted .bonusItemIcon {
+    filter: drop-shadow(0 0 6px #ffea00);
+}
+
+.bonusItem.boosted .bonusItemLabel {
+    color: #ffea00;
+    text-shadow: 0 0 8px rgba(255,234,0,0.6);
+}
+
+.bonusItem.boosted .bonusItemDesc {
+    color: rgba(255,234,0,0.6);
+}
+
+.bonusItem.boosted:hover {
+    box-shadow: 0 0 20px rgba(255,234,0,0.7), 0 0 40px rgba(255,180,0,0.3);
+    transform: translateY(-6px);
+    background: linear-gradient(135deg, rgba(255,234,0,0.28), rgba(255,180,0,0.14));
+}
+
+@keyframes boostedCardGlow {
+    0%,100% {
+        box-shadow: 0 0 10px rgba(255,234,0,0.35), 0 0 20px rgba(255,180,0,0.15);
+        border-color: #ffea00;
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255,234,0,0.7), 0 0 40px rgba(255,180,0,0.3);
+        border-color: #ffe066;
+    }
+}
+
+/* =========================
+   ICONE + LABEL
+========================= */
+
+.bonusItemIcon {
+    font-size: 40px;      /* ⬅️ avant ~28px */
+    margin-bottom: 10px;
+    line-height: 1;
+    filter: drop-shadow(0 0 6px rgba(0,255,255,0.25));
+}
+
+.bonusItemLabel {
+    font-size: 14px;       /* ⬅️ avant 12px */
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    letter-spacing: 1px;
+
+    color: #ffffff;
+    text-align: center;
+
+    margin-top: 6px;
+    text-shadow: 0 0 4px rgba(0,255,255,0.2);
+}
+
+/* =========================
+   COMPTEUR
+========================= */
+
+.bonusItemCount {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+
+    width: 22px;
+    height: 22px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 11px;
+    font-weight: bold;
+
+    color: #00ffff;
+
+    background: rgba(0, 255, 255, 0.15);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+
+    border-radius: 4px;
+
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+/* =========================
+   BONUS PENDING (ATTENTE)
+========================= */
+
+.bonusItem.bonusPending {
+    animation: bonusPulse 1.6s ease-in-out infinite;
+    border-color: #ffea00 !important;
+}
+
+@keyframes bonusPulse {
+    0%,100% {
+        box-shadow: 0 0 8px rgba(255,234,0,0.3);
+    }
+    50% {
+        box-shadow: 0 0 18px rgba(255,234,0,0.8);
+    }
+}
+
+/* =========================
+   BONUS NON DISPONIBLE
+========================= */
+
+.bonusItem.bonusAlreadyActive {
+    opacity: 0.4;
+    filter: grayscale(60%);
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* =========================
+   DESCRIPTION BONUS (texte sous carte)
+========================= */
+
+.bonusItemDesc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    text-align: center;
+    line-height: 1.4;
+    margin-top: 6px;
+}
+
+/* si jamais du texte devient noir par héritage */
+.bonusItemDesc * {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.bonusItemLabel {
+    color: #ffffff;
+    font-size: 12px;
+    letter-spacing: 0.6px;
+
+    opacity: 1;                  /* ⬅️ important */
+    text-shadow: 0 0 2px rgba(0,255,255,0.2);
+}
+
+.bonusItemIcon {
+    filter: none;                /* ⬅️ enlève tout flou éventuel */
+}
+
+/* =========================
+   TUTO PREMIÈRE CARTE BONUS
+========================= */
+
+#bonusCardTutorial {
+    position: fixed;
+    bottom: 220px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    z-index: 99998;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#bonusCardTutorial.show {
+    opacity: 1;
+}
+
+#bonusCardTutorial.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#bonusCardTutoText {
+    background: rgba(10,10,20,0.92);
+    border: 2px solid #ffea00;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    color: #ffea00;
+    text-shadow: 0 0 8px rgba(255,234,0,0.5);
+    letter-spacing: 1px;
+    text-align: center;
+    max-width: 280px;
+    line-height: 1.5;
+    box-shadow: 0 0 16px rgba(255,234,0,0.3);
+    white-space: normal;
+}
+
+#bonusCardTutoArrow {
+    font-size: 24px;
+    color: #ffea00;
+    text-shadow: 0 0 10px rgba(255,234,0,0.7);
+    animation: tutoArrowBounce 0.7s ease-in-out infinite;
+}
+
+@keyframes tutoArrowBounce {
+    0%,100% { transform: translateY(0px); }
+    50%      { transform: translateY(6px); }
 }

@@ -29,13 +29,20 @@ const Sounds = {
     // --- Sons combo ---
     combo5  : new Audio("./sounds/combo5.mp3"),   // x5 niveaux parfaits
     combo10 : new Audio("./sounds/combo10.mp3"),  // x10
-    combo20 : new Audio("./sounds/combo20.mp3"),  // x20 (+ vie)
+    combo20 : new Audio("./sounds/combo20.mp3"),  // x20 (palier majeur)
 
     // --- Son gain de vie ---
     oneUp   : new Audio("./sounds/1up.mp3"),
 
     // --- Son relance niveau ---
     restart : new Audio("./sounds/restart.mp3"),
+
+    // --- Sons d'activation des bonus arcade ---
+    bonusShield   : new Audio("./sounds/bonus-shield.mp3"),
+    bonusDoubleXp : new Audio("./sounds/bonus-doublexp.mp3"),
+    bonusSlowtime : new Audio("./sounds/bonus-slowtime.mp3"),
+    bonusFreeze   : new Audio("./sounds/bonus-freeze.mp3"),
+    comboBoost : new Audio("./sounds/combo-boost.mp3"),
 
     // --- Sons par palier de niveaux ---
     level1 : new Audio("./sounds/level-1.mp3"),

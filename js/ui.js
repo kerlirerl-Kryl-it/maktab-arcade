@@ -37,6 +37,107 @@ const particles    = document.getElementById("particles");
 //  MISE À JOUR GÉNÉRALE DE L'INTERFACE
 // ============================================================
 
+// ============================================================
+//  EFFET TYPEWRITER SUR LES INSTRUCTIONS
+//  Affiche le texte lettre par lettre, style GameBoy/RPG.
+//  - Vitesse : 28ms par caractère (rapide mais lisible)
+//  - Pause sur les fins de phrase (. ! ?) : 280ms
+//  - Clic ou touche Espace → skip (affiche le texte entier d'un coup)
+//  - Curseur clignotant à la fin
+// ============================================================
+
+let _typewriterTimeout    = null;
+let _typewriterSkipHandler = null; // référence pour pouvoir le retirer depuis l'extérieur
+
+function typewriterInstruction(text) {
+
+    // Annuler tout typewriter en cours ET retirer ses anciens listeners
+    // (sinon le texte du niveau précédent continue de s'écrire en fond,
+    // et ses listeners de clic/touche restent actifs et gênent le niveau suivant)
+    cancelTypewriter();
+
+    instruction.innerText = "";
+    instruction.setAttribute("data-level", level);
+
+    let i = 0;
+    const CHAR_DELAY   = 28;   // ms entre chaque caractère
+    const PAUSE_DELAY  = 280;  // ms après . ! ?
+
+    function typeNext() {
+        if (i >= text.length) {
+            // Fin : curseur clignotant
+            instruction.innerHTML = escapeHtml(text) + '<span class="typeCursor">▌</span>';
+            cleanupListeners();
+            return;
+        }
+
+        const char = text[i];
+        instruction.innerHTML = escapeHtml(text.slice(0, i + 1)) + '<span class="typeCursor">▌</span>';
+        i++;
+
+        // Pause plus longue sur ponctuation de fin de phrase
+        const delay = /[.!?]/.test(char) ? PAUSE_DELAY : CHAR_DELAY;
+        _typewriterTimeout = setTimeout(typeNext, delay);
+    }
+
+    function cleanupListeners() {
+        instruction.removeEventListener("click", skipHandler);
+        document.removeEventListener("keydown", skipHandler);
+        _typewriterSkipHandler = null;
+    }
+
+    // Skip : clic sur l'instruction ou touche Espace → affiche tout d'un coup
+    function skipHandler(e) {
+        if (e.type === "keydown" && e.key !== " ") return;
+        clearTimeout(_typewriterTimeout);
+        _typewriterTimeout = null;
+        instruction.innerHTML = escapeHtml(text) + '<span class="typeCursor">▌</span>';
+        cleanupListeners();
+    }
+
+    _typewriterSkipHandler = skipHandler;
+    instruction.addEventListener("click", skipHandler);
+    document.addEventListener("keydown", skipHandler);
+
+    typeNext();
+}
+
+// Annule un typewriter en cours et retire proprement ses listeners.
+// Appelée au début de chaque nouveau typewriterInstruction(), et aussi
+// quand on quitte le niveau 1 sans attendre la fin de l'animation
+// (ex: clic sur "Suivant" avant que le texte ait fini de s'écrire).
+function cancelTypewriter() {
+    if (_typewriterTimeout) {
+        clearTimeout(_typewriterTimeout);
+        _typewriterTimeout = null;
+    }
+    if (_typewriterSkipHandler) {
+        instruction.removeEventListener("click", _typewriterSkipHandler);
+        document.removeEventListener("keydown", _typewriterSkipHandler);
+        _typewriterSkipHandler = null;
+    }
+}
+
+// Échappe le HTML pour éviter toute injection via les textes de niveaux
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/\n/g, "<br>");
+}
+
+// Échappement adapté aux attributs HTML (title, alt...), sans transformer
+// les retours à la ligne en balises <br> qui s'afficheraient comme du texte brut.
+function escapeAttr(str) {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
 function updateUI() {
     title.innerText = "Niveau " + level;
     scoreText.innerText = "Score : " + score;
@@ -57,6 +158,124 @@ function showScorePopup(points) {
     popup.style.top = "120px";
     document.body.appendChild(popup);
     setTimeout(() => popup.remove(), 2000);
+}
+
+
+//  ANIMATION DOUBLE XP
+//  Séquence :
+//   1. Popup "+base pts" monte (comme score normal)
+//   2. Flash "× N !" sur le panneau score
+//   3. Compteur animé du score de base → score total
+//   4. Flash doré final
+// ============================================================
+
+function showDoubleXpAnimation(base, total) {
+
+    const multiplier = total / base;
+
+    // --- ÉTAPE 1 : popup score de base (comme d'habitude) ---
+    const popup1 = document.createElement("div");
+    popup1.className = "scorePopup";
+    popup1.innerText = "+ " + base + " pts";
+    popup1.style.top = "120px";
+    document.body.appendChild(popup1);
+
+    // --- ÉTAPE 2 : après 900ms, apparition du multiplicateur ---
+    setTimeout(() => {
+        popup1.remove();
+
+        // Bandeau "× N !" centré sur le panneau score
+        const multiplierBadge = document.createElement("div");
+        multiplierBadge.id = "doubleXpBadge";
+        multiplierBadge.innerHTML = `
+            <div style="font-size:14px;color:rgba(255,255,255,0.7);letter-spacing:2px;
+                        font-family:monospace">DOUBLE XP</div>
+            <div style="font-size:48px;font-weight:900;font-family:'Orbitron',monospace;
+                        color:#ffea00;text-shadow:0 0 16px #ffea00,0 0 32px #ff00ff;
+                        letter-spacing:4px;line-height:1">
+                × ${multiplier}
+            </div>
+        `;
+        Object.assign(multiplierBadge.style, {
+            position      : "fixed",
+            top           : "50%",
+            left          : "50%",
+            transform     : "translate(-50%,-50%) scale(0.4)",
+            background    : "linear-gradient(135deg,#1a0030,#2b0050)",
+            border        : "3px solid #ffea00",
+            borderRadius  : "18px",
+            padding       : "18px 36px",
+            textAlign     : "center",
+            boxShadow     : "0 0 40px #ffea00, 0 0 80px rgba(255,0,255,0.4)",
+            zIndex        : "99992",
+            pointerEvents : "none",
+            opacity       : "0",
+            transition    : "opacity 0.25s ease, transform 0.35s cubic-bezier(0.22,1.8,0.36,1)"
+        });
+        document.body.appendChild(multiplierBadge);
+
+        requestAnimationFrame(() => {
+            multiplierBadge.style.opacity   = "1";
+            multiplierBadge.style.transform = "translate(-50%,-50%) scale(1)";
+        });
+
+        Sounds.jouer("comboBoost");
+
+        // Flash doré sur le panneau score
+        const scorePanel = document.getElementById("scorePanel");
+        scorePanel.classList.add("doubleXpFlash");
+
+    }, 900);
+
+    // --- ÉTAPE 3 : compteur animé du score ---
+    // Le score a déjà été ajouté dans nextLevel(), on repart de
+    // (score - total + base) pour animer jusqu'à score
+    const scoreEl = document.getElementById("floatingScore");
+    const startVal = score - total + base; // valeur après les points de base
+    const endVal   = score;                // valeur finale avec le multiplicateur
+    const duration = 1800; // ms
+    const startTime = performance.now() + 1200; // démarre après l'apparition du badge
+
+    function animateCount(now) {
+        if (now < startTime) { requestAnimationFrame(animateCount); return; }
+        const elapsed  = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Easing "ease-out"
+        const eased    = 1 - Math.pow(1 - progress, 3);
+        const current  = Math.round(startVal + (endVal - startVal) * eased);
+        scoreEl.innerText = current;
+        scoreText.innerText = "Score : " + current;
+        if (progress < 1) {
+            requestAnimationFrame(animateCount);
+        } else {
+            scoreEl.innerText   = endVal;
+            scoreText.innerText = "Score : " + endVal;
+        }
+    }
+    requestAnimationFrame(animateCount);
+
+    // --- ÉTAPE 4 : popup total + nettoyage ---
+    setTimeout(() => {
+        const popup2 = document.createElement("div");
+        popup2.className = "scorePopup";
+        popup2.innerText = "+ " + total + " pts";
+        popup2.style.top    = "120px";
+        popup2.style.color  = "#ffea00";
+        popup2.style.border = "1px solid #ffea00";
+        document.body.appendChild(popup2);
+        setTimeout(() => popup2.remove(), 2000);
+    }, 1800);
+
+    setTimeout(() => {
+        const badge = document.getElementById("doubleXpBadge");
+        if (badge) {
+            badge.style.opacity   = "0";
+            badge.style.transform = "translate(-50%,-50%) scale(0.7)";
+            setTimeout(() => badge.remove(), 300);
+        }
+        const scorePanel = document.getElementById("scorePanel");
+        scorePanel.classList.remove("doubleXpFlash");
+    }, 3200);
 }
 
 // ============================================================
@@ -475,19 +694,29 @@ function setupReplayBtn() {
         if (victoryLoop) { clearInterval(victoryLoop); victoryLoop = null; }
         Sounds.arreter("victory");
 
-        score               = 0;
-        level               = 2;
-        currentRank         = "Débutant";
-        comboCount          = 0;
-        hadPenaltyThisLevel = false;
-        gameHasHadPenalty   = false; // nouvelle partie = chance de PERFECT remise à zéro
-        lives               = 0;
+        score                     = 0;
+        level                     = 2;
+        currentRank               = "Débutant";
+        gameHasHadPenalty         = false;
+        hadPenaltyThisLevel       = false;
+        comboFirstShown           = false;
+        streakPoints              = 0;
+        bonusInventory            = [];
+        activeBonus               = null;
+        lastStreakThresholdGiven  = 0;
+        comboBoostStreak          = 0;
+        comboBoostPending         = false;
+        shieldActive              = false;
+        shieldUsesLeft            = 0;
+        doubleXpActive            = false;
+        doubleXpMultiplier        = 1;
 
         deleteSave(); // on repart de zéro → effacer la sauvegarde
 
         document.getElementById("victoryScreen").style.display = "none";
-        updateLivesDisplay();
-        updateComboDisplay();
+        updateStreakDisplay();
+        updateBonusInventoryDisplay();
+        updateActiveBonusDisplay();
         updateUI();
         loadLevel();
         canValidate = true;
@@ -533,8 +762,17 @@ let _bonusDecayTick    = 0;    // compteur interne pour le rythme du decay
 function startTimer(seconds) {
     stopTimer();
 
-    _timerTotalSeconds  = seconds;
-    timerSeconds        = seconds;
+    // Application des effets de bonus actifs au démarrage du timer
+    let startSeconds = seconds;
+    freezeActive       = false;
+    slowTimeActive     = false;
+    slowTimeMultiplier = 1;
+
+    let freezeSecondsLeft   = 0;
+    let slowTimeSecondsLeft = 0;
+
+    _timerTotalSeconds  = startSeconds;
+    timerSeconds        = startSeconds;
     timerBonusPoints    = TIMER_BONUS_MAX;
     _bonusDecayTick     = 0;
 
@@ -544,10 +782,11 @@ function startTimer(seconds) {
     const bonusFill  = document.getElementById("timerBonusFill");
     const bonusNum   = document.getElementById("timerBonusNum");
 
-    // Cacher l'ancien objectCounter (on utilise le panneau dédié maintenant)
+
     objectCounter.style.display = "none";
 
-    // Montrer le panneau chrono avec une animation de déclenchement
+    // Montrer le panneau chrono AVANT d'appliquer les effets visuels de bonus
+    // (sinon la classe .frozen/.slowed serait ajoutée à un panneau encore caché)
     panel.style.display = "flex";
     panel.classList.remove("urgent");
     panel.classList.remove("timerStart");
@@ -558,10 +797,54 @@ function startTimer(seconds) {
     // Son de démarrage du chrono (optionnel, si le fichier existe)
     Sounds.jouer("timerStart");
 
-    // Init visuel
+    // --- Maintenant que le panneau est visible, on applique les bonus actifs ---
+
+     // Application des bonus freeze/slowtime en attente au démarrage du timer
+    const pendingSlowtime = activeBonuses.find(b => b.type === "slowtime");
+    const pendingFreeze   = activeBonuses.find(b => b.type === "freeze");
+
+    if (pendingSlowtime) {
+        const boosted = pendingSlowtime.boosted;
+        startSeconds        += boosted ? 10 : 5;
+        _timerTotalSeconds   = startSeconds;
+        timerSeconds         = startSeconds;
+        slowTimeActive       = true;
+        slowTimeMultiplier   = 0.5;
+        slowTimeSecondsLeft  = boosted ? 10 : 7;
+        clearActiveBonus("slowtime");
+        showBonusActivatedPopup({ type: "slowtime", boosted });
+        applySlowtimeChromeEffect(slowTimeSecondsLeft);
+    }
+
+    if (pendingFreeze) {
+        const boosted = pendingFreeze.boosted;
+        if (pendingSlowtime) {
+            // Slowtime actif → freeze attendra dans activeBonuses,
+            // il sera enchaîné automatiquement dans applySlowtimeNow()
+        } else {
+            freezeActive      = true;
+            freezeSecondsLeft = boosted ? 15 : 10;
+            clearActiveBonus("freeze");
+            showBonusActivatedPopup({ type: "freeze", boosted });
+            applyFreezeChromeEffect(freezeSecondsLeft);
+        }
+    }
+
+    // Init visuel (recalculé après l'éventuel ajustement de durée par +Temps)
     _updateTimerVisuals(ring, number, bonusFill, bonusNum);
 
-    timerInterval = setInterval(() => {
+    // Tick toutes les secondes — mais le rythme réel dépend du gel/ralentissement
+    function tick() {
+
+        // Gel du temps : le chrono ne descend pas du tout
+        if (freezeSecondsLeft > 0) {
+            freezeSecondsLeft--;
+            _updateTimerVisuals(ring, number, bonusFill, bonusNum);
+            if (freezeSecondsLeft <= 0) freezeActive = false;
+            timerInterval = setTimeout(tick, 1000);
+            return;
+        }
+
         timerSeconds--;
         _bonusDecayTick++;
 
@@ -578,8 +861,24 @@ function startTimer(seconds) {
         if (timerSeconds <= 0) {
             stopTimer();
             timerFailed();
+            return;
         }
-    }, 1000);
+
+        // Ralentissement actif : le prochain tick met 2x plus de temps (0.5x vitesse)
+        let nextDelay = 1000;
+        if (slowTimeSecondsLeft > 0) {
+            slowTimeSecondsLeft--;
+            nextDelay = 1000 / slowTimeMultiplier; // 0.5x vitesse = délai doublé
+            if (slowTimeSecondsLeft <= 0) {
+                slowTimeActive     = false;
+                slowTimeMultiplier = 1;
+            }
+        }
+
+        timerInterval = setTimeout(tick, nextDelay);
+    }
+
+    timerInterval = setTimeout(tick, freezeSecondsLeft > 0 ? 1000 : (slowTimeSecondsLeft > 0 ? 1000 / slowTimeMultiplier : 1000));
 }
 
 function _updateTimerVisuals(ring, number, bonusFill, bonusNum) {
@@ -625,7 +924,7 @@ function _updateTimerVisuals(ring, number, bonusFill, bonusNum) {
 
 function stopTimer() {
     if (timerInterval) {
-        clearInterval(timerInterval);
+        clearTimeout(timerInterval); // interchangeable avec clearInterval en JS
         timerInterval = null;
     }
     if (timerBonusInterval) {
@@ -765,14 +1064,26 @@ function takePenalty() {
     if (penaltyCooldown) return;
     if (level < 21) return; // pas de pénalité avant le niveau 21
 
+    // Bouclier actif : on ignore complètement cette erreur (pas de points perdus,
+    // pas de casse de série, pas de marquage "partie imparfaite")
+    if (shieldActive && shieldUsesLeft > 0) {
+        shieldUsesLeft--;
+        showShieldBlockedPopup(shieldUsesLeft);
+        if (shieldUsesLeft <= 0) {
+            shieldActive = false;
+            clearActiveBonus();
+        }
+        return;
+    }
+
     penaltyCooldown = true;
     setTimeout(() => { penaltyCooldown = false; }, 1000);
 
     // Cette partie n'est plus "parfaite" — utilisé pour le bonus PERFECT
     gameHasHadPenalty = true;
 
-    // Casse le combo dès la première faute
-    breakCombo();
+    // Signale une faute sur le niveau en cours (série de performance)
+    breakStreak();
 
     let pointsLost = 0;
 
@@ -801,6 +1112,50 @@ function takePenalty() {
         updateUI();
         showPenaltyPopup(pointsLost);
     }
+}
+
+// ============================================================
+//  POPUP : ERREUR BLOQUÉE PAR LE BOUCLIER
+// ============================================================
+
+function showShieldBlockedPopup(usesLeft) {
+    const popup = document.createElement("div");
+    popup.innerHTML = `
+        <div style="font-size:30px">🛡️</div>
+        <div style="font-size:15px;font-weight:900;color:#00ffff;letter-spacing:1px;
+                    font-family:'Orbitron',monospace;margin-top:4px">
+            ERREUR BLOQUÉE !
+        </div>
+        ${usesLeft > 0 ? `<div style="font-size:11px;color:#aaa;margin-top:2px">${usesLeft} protection(s) restante(s)</div>` : ""}
+    `;
+    Object.assign(popup.style, {
+        position      : "fixed",
+        top           : "45%",
+        left          : "50%",
+        transform     : "translate(-50%,-50%) scale(0.7)",
+        background    : "rgba(0,20,40,0.92)",
+        border        : "2px solid #00ffff",
+        borderRadius  : "14px",
+        padding       : "14px 24px",
+        textAlign     : "center",
+        boxShadow     : "0 0 18px cyan",
+        zIndex        : "99989",
+        pointerEvents : "none",
+        opacity       : "0",
+        transition    : "all 0.2s ease"
+    });
+    document.body.appendChild(popup);
+
+    requestAnimationFrame(() => {
+        popup.style.opacity   = "1";
+        popup.style.transform = "translate(-50%,-50%) scale(1)";
+    });
+
+    setTimeout(() => {
+        popup.style.opacity   = "0";
+        popup.style.transform = "translate(-50%,-50%) scale(0.7)";
+        setTimeout(() => popup.remove(), 200);
+    }, 900);
 }
 
 // ============================================================
@@ -990,20 +1345,49 @@ function showTutorialAnim(lvl, callback) {
     overlay.style.display = "flex";
     overlay.style.opacity = "1";
     overlay.classList.remove("tutFadeOut");
+    tutorialOverlayActive = true;
+
+    let dismissed = false;
 
     function dismiss() {
+        if (dismissed) return;
+        dismissed = true;
+
         clearTimeout(timer);
         overlay.removeEventListener("click", dismiss);
+        document.removeEventListener("mousemove", moveDismiss);
+
         overlay.classList.add("tutFadeOut");
         setTimeout(() => {
             overlay.style.display = "none";
             overlay.classList.remove("tutFadeOut");
+            tutorialOverlayActive = false;
             if (callback) callback();
         }, 400);
     }
 
+    // Le tutoriel se ferme aussi dès que le joueur bouge la souris :
+    // utile pour les niveaux où l'action attendue est justement un
+    // mouvement de souris (ex: niveau 2, "déplace la souris vers le fromage"),
+    // sinon le joueur ne voit pas la cible et ne sait pas où viser tant
+    // qu'il n'a pas explicitement cliqué pour fermer l'overlay.
+    let initialMoveIgnored = false;
+    function moveDismiss() {
+        // On ignore le tout premier événement mousemove qui peut être
+        // déclenché artificiellement juste après l'affichage de l'overlay.
+        if (!initialMoveIgnored) {
+            initialMoveIgnored = true;
+            return;
+        }
+        dismiss();
+    }
+
     overlay.addEventListener("click", dismiss);
-    const timer = setTimeout(dismiss, 15000);
+    document.addEventListener("mousemove", moveDismiss);
+
+    // Délai d'auto-fermeture réduit (15s → 8s) pour ne pas bloquer trop
+    // longtemps l'accès visuel au reste du niveau.
+    const timer = setTimeout(dismiss, 8000);
 }
 
 // ============================================================
@@ -1011,6 +1395,27 @@ function showTutorialAnim(lvl, callback) {
 //  Le style est désormais dans style.css (#inputZone, #textInput)
 //  On gère ici seulement les classes active/idle et le curseur.
 // ============================================================
+
+// ============================================================
+//  RÉVÉLER LA ZONE DE TEXTE APRÈS LE TRI (niveaux 49 et 50)
+//  Ces niveaux cachent volontairement la zone d'écriture tant
+//  que le joueur n'a pas fini de trier les objets dans les sacs.
+// ============================================================
+
+function showInputZoneFor49And50() {
+    inputZone.style.display = "flex";
+    textInput.classList.add("idle");
+    textInput.classList.remove("typing");
+
+    // Toujours au-dessus des sacs, comme pour les autres niveaux avec sacs
+    inputZone.style.bottom    = "170px";
+    inputZone.style.top       = "auto";
+    inputZone.style.transform = "translateX(-50%)";
+
+    validateBtn.style.display = "none"; // ces niveaux valident automatiquement
+
+    setTimeout(() => { textInput.focus(); }, 100);
+}
 
 function initTextInputListeners() {
 
@@ -1052,94 +1457,145 @@ updateBackground();
 updateXP();
 
 // ============================================================
-//  VIES : AFFICHAGE
-// ============================================================
-
-function updateLivesDisplay() {
-    const el = document.getElementById("livesCount");
-    if (el) el.innerText = lives;
-
-    // Griser le bouton vie si aucune vie disponible
-    const btn = document.getElementById("useLifeBtn");
-    if (btn) {
-        btn.disabled      = lives <= 0;
-        btn.style.opacity = lives <= 0 ? "0.4" : "1";
-    }
-}
-
-// ============================================================
-//  COMBO : incrémenter ou réinitialiser
+//  SYSTÈME DE SÉRIE DE PERFORMANCE
+//  Règle : niveau réussi sans faute = +1 point de série
+//          erreur = -3 points de série (minimum 0)
 // ============================================================
 
 // Appelé par nextLevel() quand un niveau est validé
-function incrementCombo() {
+function incrementStreak() {
+
     if (hadPenaltyThisLevel) {
-        // Faute commise ce niveau → on casse le combo
-        comboCount = 0;
+        // Une faute a été commise sur ce niveau → pénalité de série
+        streakPoints = Math.max(0, streakPoints - 3);
+        comboBoostStreak = 0; // le Combo Boost se réinitialise sur la moindre faute
     } else {
-        comboCount++;
-    }
+        streakPoints++;
+        comboBoostStreak++;
 
-    // Bonus +7 pts tous les 5 niveaux parfaits
-    if (!hadPenaltyThisLevel && comboCount > 0 && comboCount % 5 === 0) {
-        score += 7;
-        Sounds.jouerCombo(comboCount);
-        showComboBonus(comboCount);
-    }
+        // Vérifier si un seuil de bonus vient d'être franchi
+        checkStreakBonusUnlock();
 
-    // Bonus vie tous les 20 niveaux parfaits
-    if (!hadPenaltyThisLevel && comboCount > 0 && comboCount % 20 === 0) {
-        gainLife();
+        // Vérifier le Combo Boost (24 niveaux consécutifs sans faute)
+        if (comboBoostStreak > 0 && comboBoostStreak % COMBO_BOOST_THRESHOLD === 0) {
+            comboBoostPending = true;
+            showComboBoostUnlocked();
+        }
     }
 
     hadPenaltyThisLevel = false;
-    updateComboDisplay();
+    updateStreakDisplay();
     updateUI();
 }
 
-// Appelé par takePenalty() pour casser le combo
-function breakCombo() {
+// Appelé par takePenalty() pour signaler une faute sur le niveau en cours
+function breakStreak() {
     hadPenaltyThisLevel = true;
-    comboCount = 0;
-    updateComboDisplay();
+    updateStreakDisplay();
 }
 
 // ============================================================
-//  COMBO : affichage du compteur en haut à gauche
+//  DÉBLOCAGE DES BONUS PAR PALIER DE SÉRIE
+//  Cycle : 5, 10, 15, 20, 25(=5+20), 30(=10+20), 35, 40, 45, 50...
 // ============================================================
 
-function updateComboDisplay() {
+function checkStreakBonusUnlock() {
+
+    // Le palier dans le cycle de 20 (5, 10, 15, ou 20/0)
+    const cyclePos = streakPoints % 20;
+
+    // On ne redonne pas deux fois le même seuil consécutivement
+    if (streakPoints <= lastStreakThresholdGiven) return;
+
+    let bonusType = null;
+
+    if (cyclePos === 5)       bonusType = "doubleXp";
+    else if (cyclePos === 10) bonusType = "shield";
+    else if (cyclePos === 15) bonusType = "slowtime";
+    else if (cyclePos === 0 && streakPoints > 0) bonusType = "freeze"; // 20, 40, 60...
+
+    if (bonusType) {
+        lastStreakThresholdGiven = streakPoints;
+        unlockBonus(bonusType);
+    }
+}
+
+const BONUS_INFO = {
+    doubleXp : { icon: "✨", label: "Double XP",        desc: "x2 points sur le prochain niveau" },
+    shield   : { icon: "🛡️", label: "Bouclier",          desc: "Ignore 1 erreur sans pénalité" },
+    slowtime : { icon: "⏳", label: "+5sec et temps ralenti",  desc: "+5s et ralenti pendant 7s" },
+    freeze   : { icon: "❄️", label: "Gel du temps",       desc: "Chrono figé pendant 10s" }
+};
+
+const BONUS_INFO_BOOSTED = {
+    doubleXp : { icon: "✨", label: "Double XP BOOSTÉ",       desc: "x3 points sur le prochain niveau" },
+    shield   : { icon: "🛡️", label: "Bouclier BOOSTÉ",        desc: "Ignore 2 erreurs sans pénalité" },
+    slowtime : { icon: "⏳", label: "+ 10sec et temps ralenti",  desc: "+10s et ralenti pendant 15s" },
+    freeze   : { icon: "❄️", label: "Gel du temps BOOSTÉ",     desc: "Chrono figé pendant 15s" }
+};
+
+// Ajoute un bonus à l'inventaire (consommable, à activer plus tard)
+function unlockBonus(type) {
+    const boosted = comboBoostPending;
+    if (boosted) comboBoostPending = false;
+
+    bonusInventory.push({ type: type, boosted: boosted });
+
+    Sounds.jouer(boosted ? "combo20" : "combo10");
+    showBonusUnlockedPopup(type, boosted);
+    updateBonusInventoryDisplay();
+
+    // Tuto flèche au premier bonus débloqué
+    setTimeout(() => showBonusCardTutorial(), 1600);
+}
+
+// ============================================================
+//  AFFICHAGE DU COMPTEUR DE SÉRIE (haut à gauche)
+// ============================================================
+
+function updateStreakDisplay() {
     const el = document.getElementById("comboDisplay");
     if (!el) return;
 
-    if (comboCount >= 5) {
+    if (streakPoints >= 5) {
         el.style.display = "flex";
-        el.innerHTML = `🔥 COMBO × ${comboCount} <span style="font-size:12px;color:#ffcc00;margin-left:8px">+7 pts/niveau</span>`;
-    } else if (comboCount >= 2) {
+        const nextThreshold = (Math.floor(streakPoints / 5) + 1) * 5;
+        el.innerHTML = `🔥 SÉRIE × ${streakPoints} <span style="font-size:12px;color:#ffcc00;margin-left:8px">prochain bonus à ${nextThreshold}</span>`;
+    } else if (streakPoints >= 1) {
         el.style.display = "flex";
-        el.innerHTML = `⚡ ${comboCount} niveaux parfaits`;
+        el.innerHTML = `⚡ Série : ${streakPoints}`;
     } else {
         el.style.display = "none";
     }
 }
 
 // ============================================================
-//  EFFET VISUEL : BONUS +7 PTS (combo 5+)
+//  POPUP : BONUS DÉBLOQUÉ
 // ============================================================
 
-function showComboBonus(count) {
-    updateComboDisplay();
+function showBonusUnlockedPopup(type, boosted) {
 
-    // Popup arcade au centre de l'écran
+    const info = boosted ? BONUS_INFO_BOOSTED[type] : BONUS_INFO[type];
+    const displayDuration = bonusUnlockedFirstShown ? 1400 : 3000;
+    bonusUnlockedFirstShown = true;
+
+    const borderColor = boosted ? "#ffea00" : "#ff00ff";
+    const glow         = boosted
+        ? "0 0 30px #ffea00, 0 0 60px rgba(255,234,0,0.5)"
+        : "0 0 30px #ff00ff, 0 0 60px rgba(255,0,255,0.4)";
+
     const popup = document.createElement("div");
     popup.innerHTML = `
-        <div style="font-size:38px;margin-bottom:6px">🔥</div>
-        <div style="font-size:22px;font-weight:900;letter-spacing:3px;color:#ffea00;
-                    text-shadow:0 0 10px #ffea00,0 0 20px #ff00ff;font-family:monospace">
-            COMBO × ${count}
+        <div style="font-size:38px;margin-bottom:6px">${info.icon}</div>
+        <div style="font-size:20px;font-weight:900;letter-spacing:2px;color:${boosted ? '#ffea00' : '#ff00ff'};
+                    text-shadow:0 0 10px currentColor;font-family:'Orbitron',monospace">
+            ${boosted ? "⚡ " : ""}BONUS DÉBLOQUÉ
         </div>
-        <div style="font-size:16px;color:#00ff99;margin-top:4px;letter-spacing:2px">
-            + 7 POINTS BONUS !
+        <div style="font-size:18px;color:#00ff99;margin-top:6px;font-weight:bold">
+            ${info.label}
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px">
+            ${info.desc}
         </div>
     `;
     Object.assign(popup.style, {
@@ -1148,11 +1604,11 @@ function showComboBonus(count) {
         left          : "50%",
         transform     : "translate(-50%,-50%) scale(0.5)",
         background    : "linear-gradient(135deg,#1a0030,#2b0050)",
-        border        : "3px solid #ff00ff",
+        border        : `3px solid ${borderColor}`,
         borderRadius  : "18px",
         padding       : "22px 36px",
         textAlign     : "center",
-        boxShadow     : "0 0 30px #ff00ff,0 0 60px rgba(255,0,255,0.4)",
+        boxShadow     : glow,
         zIndex        : "99990",
         pointerEvents : "none",
         opacity       : "0",
@@ -1168,150 +1624,525 @@ function showComboBonus(count) {
     setTimeout(() => {
         popup.style.opacity   = "0";
         popup.style.transform = "translate(-50%,-50%) scale(0.7)";
-        setTimeout(() => popup.remove(), 300);
-    }, 1600);
+        setTimeout(() => popup.remove(), 250);
+    }, displayDuration);
 }
 
 // ============================================================
-//  GAIN D'UNE VIE : effet "+1UP" style arcade
+//  POPUP : COMBO BOOST DÉBLOQUÉ (24 niveaux sans faute)
 // ============================================================
 
-function gainLife() {
-    if (lives >= maxLives) return;
-    lives++;
-    updateLivesDisplay();
-    Sounds.jouer("oneUp");
-    show1UP();
-}
+function showComboBoostUnlocked() {
+    Sounds.jouer("combo20");
 
-function show1UP() {
-    // Popup "1UP" qui monte et disparaît
+    const displayDuration = comboBoostFirstShown ? 2200 : 3000;
+    comboBoostFirstShown = true;
+
     const popup = document.createElement("div");
     popup.innerHTML = `
-        <div style="font-size:50px">❤️</div>
+        <div style="font-size:46px;margin-bottom:6px">⚡🔥</div>
         <div style="font-size:32px;font-weight:900;letter-spacing:4px;
-                    color:#ff3cac;text-shadow:0 0 10px #ff3cac,0 0 20px #ff00ff,3px 3px 0 #000;
-                    font-family:monospace">+1UP</div>
-        <div style="font-size:13px;color:#fff;letter-spacing:2px;margin-top:4px">NOUVELLE VIE !</div>
-    `;
-    Object.assign(popup.style, {
-        position      : "fixed",
-        bottom        : "140px",
-        right         : "30px",
-        background    : "linear-gradient(135deg,#2a0030,#500050)",
-        border        : "3px solid #ff3cac",
-        borderRadius  : "16px",
-        padding       : "18px 28px",
-        textAlign     : "center",
-        boxShadow     : "0 0 20px #ff3cac, 0 0 40px rgba(255,60,172,0.5)",
-        zIndex        : "99991",
-        pointerEvents : "none",
-        opacity       : "1",
-        transition    : "opacity 0.4s ease, transform 0.4s ease",
-        transform     : "translateY(0px) scale(1)",
-        animation     : "none"
-    });
-    document.body.appendChild(popup);
-
-    // Phase 1 : monte pendant ~1s (33 frames × 30ms)
-    // Phase 2 : reste visible 2s supplémentaires
-    // Phase 3 : disparaît
-    let frame = 0;
-    const RISE_FRAMES = 33;
-
-    const anim = setInterval(() => {
-        frame++;
-        if (frame <= RISE_FRAMES) {
-            const y = -frame * 1.8;
-            popup.style.transform = `translateY(${y}px) scale(${frame < 10 ? 1 + frame * 0.01 : 1})`;
-        }
-        // Après la montée, on attend 2s supplémentaires (≈ 67 frames à 30ms)
-        if (frame >= RISE_FRAMES + 67) {
-            clearInterval(anim);
-            popup.style.opacity = "0";
-            setTimeout(() => popup.remove(), 400);
-        }
-    }, 30);
-}
-
-// ============================================================
-//  RELANCE DU NIVEAU (bouton 🔄 -10pts)
-// ============================================================
-
-function restartCurrentLevel() {
-    if (level <= 1) return;
-    Sounds.jouer("restart");
-    score = Math.max(0, score - restartCost);
-    showPenaltyPopup(restartCost);
-    gameHasHadPenalty = true; // une relance casse aussi le PERFECT
-    breakCombo();
-    updateUI();
-    loadLevel();
-}
-
-// ============================================================
-//  UTILISER UNE VIE (relance sans perdre de points)
-// ============================================================
-
-function useLife() {
-    if (lives <= 0) return;
-    lives--;
-    updateLivesDisplay();
-    showLifeUsedEffect();
-    loadLevel();
-}
-
-function showLifeUsedEffect() {
-    const popup = document.createElement("div");
-    popup.innerHTML = `
-        <div style="font-size:36px">🛡️</div>
-        <div style="font-size:20px;font-weight:900;color:#00ffff;letter-spacing:3px;font-family:monospace">
-            VIE UTILISÉE
+                    font-family:'Orbitron',monospace;color:#ffea00;
+                    text-shadow:0 0 12px #ffea00,0 0 24px #ff00ff,0 0 40px #ff00ff">
+            COMBO BOOST
         </div>
-        <div style="font-size:13px;color:#aaa;margin-top:4px">Relance sans pénalité !</div>
+        <div style="font-size:14px;color:#00ff99;margin-top:8px;letter-spacing:1px;font-weight:bold">
+            Ton prochain bonus sera amélioré !
+        </div>
     `;
     Object.assign(popup.style, {
         position      : "fixed",
-        top           : "50%",
+        top           : "38%",
         left          : "50%",
-        transform     : "translate(-50%,-50%) scale(0.8)",
-        background    : "rgba(0,20,40,0.92)",
-        border        : "2px solid #00ffff",
-        borderRadius  : "16px",
-        padding       : "20px 32px",
+        transform     : "translate(-50%,-50%) scale(0.4) rotate(-6deg)",
+        background    : "linear-gradient(135deg,#1a0030,#2b0050,#1a0030)",
+        border        : "3px solid #ffea00",
+        borderRadius  : "20px",
+        padding       : "26px 44px",
         textAlign     : "center",
-        boxShadow     : "0 0 20px cyan",
-        zIndex        : "99990",
+        boxShadow     : "0 0 40px #ffea00, 0 0 80px rgba(255,0,255,0.5)",
+        zIndex        : "999998",
         pointerEvents : "none",
         opacity       : "0",
-        transition    : "all 0.25s ease"
+        transition    : "opacity 0.25s ease, transform 0.4s cubic-bezier(0.22,1.8,0.36,1)"
     });
     document.body.appendChild(popup);
 
     requestAnimationFrame(() => {
         popup.style.opacity   = "1";
-        popup.style.transform = "translate(-50%,-50%) scale(1)";
+        popup.style.transform = "translate(-50%,-50%) scale(1) rotate(0deg)";
     });
 
     setTimeout(() => {
         popup.style.opacity   = "0";
-        popup.style.transform = "translate(-50%,-50%) scale(0.8)";
-        setTimeout(() => popup.remove(), 250);
-    }, 1200);
+        popup.style.transform = "translate(-50%,-50%) scale(0.8) rotate(3deg)";
+        setTimeout(() => popup.remove(), 350);
+    }, displayDuration);
 }
 
 // ============================================================
-//  LISTENERS DES BOUTONS RELANCE / VIE
+//  RELANCE DU NIVEAU — gratuite, sans pénalité de points
+// ============================================================
+
+function restartCurrentLevel() {
+    if (level <= 1) return;
+    Sounds.jouer("restart");
+    loadLevel();
+}
+
+// ============================================================
+//  INVENTAIRE DES BONUS : AFFICHAGE
+// ============================================================
+
+function updateBonusInventoryDisplay() {
+    const panel = document.getElementById("bonusPanel");
+    const list  = document.getElementById("bonusInventoryList");
+    if (!panel || !list) return;
+
+    if (bonusInventory.length === 0 && activeBonuses.length === 0) {
+        panel.style.display = "none";
+        return;
+    }
+
+    // Regrouper les bonus identiques (même type + même état boosted)
+    const groups = [];
+    bonusInventory.forEach((b, i) => {
+        const key = b.type + (b.boosted ? "_boosted" : "");
+        const existing = groups.find(g => g.key === key);
+        if (existing) {
+            existing.count++;
+            existing.indices.push(i);
+        } else {
+            groups.push({ key, type: b.type, boosted: b.boosted, count: 1, indices: [i] });
+        }
+    });
+
+    panel.style.display = "block";
+
+    // Bonus actif en attente (freeze/slowtime sans timer actif) : affiché en tête
+    let activePendingHTML = "";
+   const pendingTimerBonuses = activeBonuses.filter(b => b.type === "freeze" || b.type === "slowtime");
+    activePendingHTML = pendingTimerBonuses.map(b => {
+        const info = b.boosted ? BONUS_INFO_BOOSTED[b.type] : BONUS_INFO[b.type];
+        return `
+            <button class="bonusItem ${b.boosted ? 'boosted' : ''} bonusPending" disabled>
+                <span class="bonusItemIcon">${info.icon}</span>
+                <span class="bonusItemLabel">${info.label}</span>
+                <span class="bonusItemDesc">${info.desc}</span>
+                <span class="bonusPendingBadge">EN ATTENTE</span>
+            </button>
+        `;
+    }).join("");
+
+    const inventoryHTML = groups.map(g => {
+        const info          = g.boosted ? BONUS_INFO_BOOSTED[g.type] : BONUS_INFO[g.type];
+        const tooltip       = `${info.label} — ${info.desc}`;
+        const alreadyActive = activeBonuses.some(b => b.type === g.type);
+         return `
+            <button class="bonusItem ${g.boosted ? 'boosted' : ''} ${alreadyActive ? 'bonusAlreadyActive' : ''}"
+                    onclick="activateBonusFromInventory(event, ${g.indices[0]})"
+                    ${alreadyActive ? 'disabled' : ''}>
+                <span class="bonusItemIcon">${info.icon}</span>
+                <span class="bonusItemLabel">${info.label}</span>
+                <span class="bonusItemDesc">${info.desc}</span>
+                ${g.count > 1 ? `<span class="bonusItemCount">×${g.count}</span>` : ""}
+            </button>
+        `;
+    }).join("");
+
+    list.innerHTML = activePendingHTML + inventoryHTML;
+}
+
+function clearActiveBonus(type) {
+    if (type) {
+        activeBonuses = activeBonuses.filter(b => b.type !== type);
+    } else {
+        activeBonuses = [];
+    }
+    const shield   = activeBonuses.find(b => b.type === "shield");
+    const doubleXp = activeBonuses.find(b => b.type === "doubleXp");
+
+    shieldActive       = !!shield;
+    shieldUsesLeft     = shield ? (shield.boosted ? 2 : 1) : 0;
+    doubleXpActive     = !!doubleXp;
+    doubleXpMultiplier = doubleXp ? (doubleXp.boosted ? 3 : 2) : 1;
+
+    updateActiveBonusDisplay();
+}
+
+// ============================================================
+//  ACTIVATION D'UN BONUS : EFFET VISUEL PLEIN ÉCRAN + SON
+//  Chaque type de bonus a son propre habillage visuel.
+//  Durée d'affichage : 3s la première fois (par type), 1.4s ensuite.
+// ============================================================
+
+function showBonusActivatedPopup(bonus) {
+
+    const type      = bonus.type;
+    const boosted   = bonus.boosted;
+    const info      = boosted ? BONUS_INFO_BOOSTED[type] : BONUS_INFO[type];
+    const isFirst   = !bonusAnnounceFirstShown[type];
+    bonusAnnounceFirstShown[type] = true;
+
+    const displayDuration = isFirst ? 3000 : 1400;
+
+    // Son distinct selon le type de bonus
+    const soundMap = {
+        shield   : "bonusShield",
+        doubleXp : "bonusDoubleXp",
+        slowtime : "bonusSlowtime",
+        freeze   : "bonusFreeze"
+    };
+    Sounds.jouer(soundMap[type] || "combo10");
+
+    // Habillage visuel plein écran spécifique au type
+    const overlay = document.createElement("div");
+    overlay.className = "bonusActivateOverlay bonus-" + type;
+
+    const themeColor = {
+        shield   : "#00ffff",
+        doubleXp : "#ffea00",
+        slowtime : "#ff9900",
+        freeze   : "#66ccff"
+    }[type];
+
+    overlay.innerHTML = `
+        <div class="bonusActivateGlow" style="--bonus-color:${themeColor}"></div>
+        <div class="bonusActivateContent">
+            <div class="bonusActivateIcon">${info.icon}</div>
+            <div class="bonusActivateLabel" style="color:${themeColor};text-shadow:0 0 16px ${themeColor}">
+                ${boosted ? "⚡ " : ""}${info.label}
+            </div>
+            <div class="bonusActivateDesc">${info.desc}</div>
+        </div>
+        ${type === "freeze" ? buildFreezeFrostHTML() : ""}
+        ${type === "shield" ? buildShieldRingHTML() : ""}
+        ${type === "slowtime" ? buildSlowtimeWaveHTML() : ""}
+        ${type === "doubleXp" ? buildDoubleXpBurstHTML() : ""}
+    `;
+
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => overlay.classList.add("show"));
+
+    setTimeout(() => {
+        overlay.classList.remove("show");
+        overlay.classList.add("hide");
+        setTimeout(() => overlay.remove(), 400);
+    }, displayDuration);
+
+    // NOTE : l'effet persistant sur le panneau chrono (givre/ralenti) ne se
+    // déclenche PAS ici, mais au moment réel où le timer démarre, dans
+    // startTimer(). Sinon le visuel se termine avant même que le niveau
+    // avec chrono ne commence (le joueur ne voit jamais l'effet).
+}
+
+// ============================================================
+//  ACTIVATION D'UN BONUS DEPUIS L'INVENTAIRE
+//  Un seul bonus actif à la fois, à utiliser avant un niveau.
+// ============================================================
+
+function activateBonusFromInventory(event, index) {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const bonus = bonusInventory[index];
+    if (!bonus) return;
+
+    // Pas deux fois le même type sur un même niveau
+    if (activeBonuses.some(b => b.type === bonus.type)) return;
+
+    // Retirer de l'inventaire
+    bonusInventory.splice(index, 1);
+
+    // Pour freeze/slowtime avec timer actif : consommé immédiatement,
+    // pas besoin de passer par activeBonuses
+    const consumedImmediately =
+        (bonus.type === "freeze" || bonus.type === "slowtime") &&
+        currentLevelHasTimer && timerInterval;
+
+    if (!consumedImmediately) {
+        activeBonuses.push(bonus);
+    }
+
+    applyActiveBonusEffect(bonus);
+    showBonusActivatedPopup(bonus);
+    updateBonusInventoryDisplay();
+    updateActiveBonusDisplay();
+}
+
+// Applique les effets immédiats du bonus activé selon son type
+function applyActiveBonusEffect(bonus) {
+    const boosted = bonus.boosted;
+
+    if (bonus.type === "shield") {
+        shieldActive   = true;
+        shieldUsesLeft = boosted ? 2 : 1;
+    }
+
+    if (bonus.type === "doubleXp") {
+        doubleXpActive     = true;
+        doubleXpMultiplier = boosted ? 3 : 2;
+    }
+
+    if (bonus.type === "freeze") {
+        if (currentLevelHasTimer && timerInterval) {
+            applyFreezeNow(boosted ? 15 : 10);
+            clearActiveBonus("freeze");
+        }
+        // Si pas de timer : reste dans activeBonuses en attente
+        updateBonusInventoryDisplay();
+    }
+
+    if (bonus.type === "slowtime") {
+        if (currentLevelHasTimer && timerInterval) {
+            applySlowtimeNow(boosted ? 10 : 7, boosted ? 10 : 5);
+            clearActiveBonus("slowtime");
+        }
+        // Si pas de timer : reste dans activeBonuses en attente
+        updateBonusInventoryDisplay();
+    }
+}  // ← accolade fermante de applyActiveBonusEffect()
+
+// --- Décor SVG/HTML spécifique à chaque type de bonus ---
+
+function buildFreezeFrostHTML() {
+    return `
+        <svg class="bonusFrostCorners" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <text x="2" y="20" font-size="22">❄️</text>
+            <text x="78" y="20" font-size="22">❄️</text>
+            <text x="2" y="95" font-size="22">❄️</text>
+            <text x="78" y="95" font-size="22">❄️</text>
+        </svg>
+    `;
+}
+
+function buildShieldRingHTML() {
+    return `<div class="bonusShieldRing"></div>`;
+}
+
+function buildSlowtimeWaveHTML() {
+    return `<div class="bonusSlowtimeWave"></div>`;
+}
+
+function buildDoubleXpBurstHTML() {
+    return `<div class="bonusXpBurst">✨✨✨</div>`;
+}
+
+// ============================================================
+//  EFFET PERSISTANT SUR LE PANNEAU CHRONO PENDANT LE GEL
+//  Givre + halo bleu autour du timerPanel, anneau figé visuellement.
+// ============================================================
+
+function applyFreezeChromeEffect(durationSeconds) {
+    const panel = document.getElementById("timerPanel");
+    if (!panel) return;
+
+    panel.classList.add("frozen");
+    setTimeout(() => panel.classList.remove("frozen"), durationSeconds * 1000);
+}
+
+function applySlowtimeChromeEffect(durationSeconds) {
+    const panel = document.getElementById("timerPanel");
+    if (!panel) return;
+
+    panel.classList.add("slowed");
+    setTimeout(() => panel.classList.remove("slowed"), durationSeconds * 1000);
+}
+
+function applyFreezeNow(freezeSecs) {
+    if (!currentLevelHasTimer || !timerInterval) return;
+
+    clearTimeout(timerInterval);
+    timerInterval = null;
+    freezeActive  = true;
+    applyFreezeChromeEffect(freezeSecs);
+
+    const t = setTimeout(() => {
+        freezeActive = false;
+
+        if (!currentLevelHasTimer) return;
+
+        // Si slowtime attend en file, on l'enchaîne maintenant
+        const pending = activeBonuses.find(b => b.type === "slowtime");
+        if (pending) {
+            const boosted = pending.boosted;
+            clearActiveBonus("slowtime");
+            // Remettre timerInterval à une valeur non-null pour que
+            // applySlowtimeNow() ne soit pas bloqué par la vérification
+            timerInterval = setTimeout(() => {}, 0);
+            applySlowtimeNow(boosted ? 10 : 7, boosted ? 10 : 5);
+        } else {
+            // Reprendre le décompte normal
+            const ring      = document.getElementById("timerRing");
+            const number    = document.getElementById("timerNumber");
+            const bonusFill = document.getElementById("timerBonusFill");
+            const bonusNum  = document.getElementById("timerBonusNum");
+
+            function tick() {
+                timerSeconds--;
+                _bonusDecayTick++;
+                if (_bonusDecayTick >= TIMER_BONUS_DECAY) {
+                    _bonusDecayTick = 0;
+                    if (timerBonusPoints > TIMER_BONUS_MIN) timerBonusPoints--;
+                }
+                _updateTimerVisuals(ring, number, bonusFill, bonusNum);
+                if (timerSeconds <= 0) { stopTimer(); timerFailed(); return; }
+                timerInterval = setTimeout(tick, 1000);
+            }
+
+            timerInterval = setTimeout(tick, 1000);
+        }
+    }, freezeSecs * 1000);
+    levelTimeouts.push(t);
+}
+
+function applySlowtimeNow(slowSecs, extraSecs) {
+    if (!currentLevelHasTimer || !timerInterval) return;
+
+    clearTimeout(timerInterval);
+    timerInterval = null;
+
+    timerSeconds       += extraSecs;
+    _timerTotalSeconds += extraSecs;
+    slowTimeActive      = true;
+    slowTimeMultiplier  = 0.5;
+
+    // Effet visuel orange sur le panneau chrono
+    applySlowtimeChromeEffect(slowSecs);
+
+    const ring      = document.getElementById("timerRing");
+    const number    = document.getElementById("timerNumber");
+    const bonusFill = document.getElementById("timerBonusFill");
+    const bonusNum  = document.getElementById("timerBonusNum");
+
+    let slowSecsLeft = slowSecs;
+
+    function tick() {
+        // Décrémenter le temps ralenti
+        timerSeconds--;
+        _bonusDecayTick++;
+        if (_bonusDecayTick >= TIMER_BONUS_DECAY) {
+            _bonusDecayTick = 0;
+            if (timerBonusPoints > TIMER_BONUS_MIN) timerBonusPoints--;
+        }
+
+        _updateTimerVisuals(ring, number, bonusFill, bonusNum);
+
+        if (timerSeconds <= 0) { stopTimer(); timerFailed(); return; }
+
+        // Calculer le délai du prochain tick
+        let nextDelay = 1000;
+
+        if (slowSecsLeft > 0) {
+            slowSecsLeft--;
+            nextDelay = 1000 / slowTimeMultiplier; // 2000ms = deux fois plus lent
+
+            if (slowSecsLeft <= 0) {
+                // Ralentissement terminé
+                slowTimeActive     = false;
+                slowTimeMultiplier = 1;
+
+                // Vérifier si un freeze attend en file
+                const pending = activeBonuses.find(b => b.type === "freeze");
+                if (pending) {
+                    const boosted = pending.boosted;
+                    clearActiveBonus("freeze");
+                    setTimeout(() => {
+                        showBonusActivatedPopup({ type: "freeze", boosted });
+                        // Remettre timerInterval non-null pour applyFreezeNow
+                        timerInterval = setTimeout(() => {}, 0);
+                        applyFreezeNow(boosted ? 15 : 10);
+                    }, 300);
+                    return; // on arrête ce tick, applyFreezeNow reprend la main
+                }
+            }
+        }
+
+        timerInterval = setTimeout(tick, nextDelay);
+    }
+
+    // Premier tick au rythme ralenti
+    timerInterval = setTimeout(tick, 1000 / slowTimeMultiplier);
+}
+
+// ============================================================
+//  AFFICHAGE DU BONUS ACTIF SUR LE NIVEAU EN COURS
+// ============================================================
+
+function updateActiveBonusDisplay() {
+    const el = document.getElementById("activeBonusBadge");
+    if (!el) return;
+
+    if (activeBonuses.length === 0) {
+        el.style.display = "none";
+        return;
+    }
+
+    el.style.display = "flex";
+    el.style.flexWrap = "wrap";
+    el.style.gap = "6px";
+
+    el.innerHTML = activeBonuses.map(b => {
+        const info = b.boosted ? BONUS_INFO_BOOSTED[b.type] : BONUS_INFO[b.type];
+        const isPending = (b.type === "freeze" || b.type === "slowtime") && !currentLevelHasTimer;
+        return `
+            <span style="display:inline-flex;align-items:center;gap:4px">
+                ${info.icon}
+                <span style="margin-left:4px">${info.label}</span>
+                ${isPending
+                    ? `<span style="margin-left:6px;font-size:11px;color:#ffea00">⏳ en attente chrono</span>`
+                    : ""}
+            </span>
+        `;
+    }).join(`<span style="color:#555;margin:0 4px">|</span>`);
+}
+
+// ============================================================
+//  TUTO PREMIER BONUS : flèche pointant la première carte
+// ============================================================
+
+let _bonusTutorialShown = false;
+
+function showBonusCardTutorial() {
+    if (_bonusTutorialShown) return;
+    _bonusTutorialShown = true;
+
+    const tuto = document.createElement("div");
+    tuto.id = "bonusCardTutorial";
+    tuto.innerHTML = `
+        <div id="bonusCardTutoText">Tu peux utiliser des cartes pour t'aider durant la partie !</div>
+        <div id="bonusCardTutoArrow">▼</div>
+    `;
+    document.body.appendChild(tuto);
+
+    requestAnimationFrame(() => tuto.classList.add("show"));
+
+    const dismiss = () => {
+        tuto.classList.remove("show");
+        tuto.classList.add("hide");
+        setTimeout(() => tuto.remove(), 300);
+        document.removeEventListener("click", dismiss);
+        clearTimeout(autoHide);
+    };
+
+    // Phase 1 : 1.5s non cliquable
+    setTimeout(() => {
+        // Phase 2 : 3.5s cliquable, puis disparition auto
+        document.addEventListener("click", dismiss);
+        const autoHide = setTimeout(dismiss, 3500);
+    }, 1500);
+}
+
+// ============================================================
+//  LISTENERS DU BOUTON RELANCE
 // ============================================================
 
 document.getElementById("restartBtn").addEventListener("click", () => {
     restartCurrentLevel();
 });
 
-document.getElementById("useLifeBtn").addEventListener("click", () => {
-    useLife();
-});
-
-// Init vies au démarrage
-updateLivesDisplay();
-updateComboDisplay();
+// Init affichage au démarrage
+updateStreakDisplay();
+updateBonusInventoryDisplay();
+updateActiveBonusDisplay();

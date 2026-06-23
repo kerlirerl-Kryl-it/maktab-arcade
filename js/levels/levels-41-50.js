@@ -80,7 +80,7 @@ const LEVELS_41_50 = [
     // NIVEAU 49
     {
         instruction: "⏱️ Trie 3 objets ET écris le mot 'SUPER' avant la fin du temps !",
-        show: ["cheese", "redApple", "greenApple", "yellowBag", "redBag", "greenBag", "textInput", "validateBtn"],
+        show: ["cheese", "redApple", "greenApple", "yellowBag", "redBag", "greenBag"],
         action: "timer-sort-and-write",
         timer: 150,
         word: "super",
@@ -90,7 +90,7 @@ const LEVELS_41_50 = [
     // NIVEAU 50 — GRAND FINAL
     {
         instruction: "🏆 GRAND FINAL ! Trie les objets, écris 'CHAMPION' et clique sur le fromage avant la fin du temps !",
-        show: ["cheese", "redObject", "greenObject", "blueObject", "redBag", "greenBag", "blueBag", "textInput", "validateBtn"],
+        show: ["cheese", "redObject", "greenObject", "blueObject", "redBag", "greenBag", "blueBag"],
         action: "timer-grand-final",
         timer: 180,
         word: "champion",

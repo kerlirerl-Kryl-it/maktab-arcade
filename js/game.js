@@ -35,7 +35,18 @@ playButton.addEventListener("click", () => {
 
 function startNewGameSequence() {
 
-    gameHasHadPenalty = false; // nouvelle partie = chance de PERFECT remise à zéro
+    gameHasHadPenalty        = false; // nouvelle partie = chance de PERFECT remise à zéro
+    comboFirstShown          = false;
+    streakPoints             = 0;
+    bonusInventory           = [];
+    activeBonuses            = [];
+    lastStreakThresholdGiven = 0;
+    comboBoostStreak         = 0;
+    comboBoostPending        = false;
+    shieldActive             = false;
+    shieldUsesLeft           = 0;
+    doubleXpActive           = false;
+    doubleXpMultiplier       = 1;
 
     playButton.disabled = true;
     playButton.classList.add("playFlash");
@@ -91,18 +102,38 @@ function nextLevel() {
     arcadeSuccessEffect();
     stopTimer();
 
-    // Mise à jour du combo AVANT d'ajouter les points
-    if (level > 1) incrementCombo();
+    // Mise à jour de la série de performance AVANT d'ajouter les points
+    if (level > 1) incrementStreak();
 
-    if (level > 1) {
+     if (level > 1) {
+        const xpMultiplier = doubleXpActive ? doubleXpMultiplier : 1;
+
         if (currentLevelHasTimer) {
-            // Niveau avec timer : on gagne le bonus dégressif au lieu des 10pts fixes
-            const bonus = timerBonusPoints;
-            score += bonus;
-            showTimerBonusPopup(bonus);
+            const base  = timerBonusPoints;
+            const total = base * xpMultiplier;
+            score += total;
+            if (xpMultiplier > 1) {
+                showDoubleXpAnimation(base, total);
+            } else {
+                showTimerBonusPopup(total, false);
+            }
         } else {
-            score += 10;
-            showScorePopup(10);
+            const base  = 10;
+            const total = base * xpMultiplier;
+            score += total;
+            if (xpMultiplier > 1) {
+                showDoubleXpAnimation(base, total);
+            } else {
+                showScorePopup(total);
+            }
+        }
+
+        if (doubleXpActive) {
+        clearActiveBonus("doubleXp");
+        }
+
+        if (shieldActive) {
+        clearActiveBonus("shield");
         }
     }
 
@@ -143,6 +174,19 @@ function nextLevel() {
 // ============================================================
 
 function resetAll() {
+
+    // Annuler tout effet typewriter encore actif (sécurité : évite que le
+    // texte d'un niveau précédent continue de s'écrire ou que ses listeners
+    // de clic/touche restent actifs sur le niveau suivant)
+    cancelTypewriter();
+
+    // Sécurité : si un changement de niveau brusque a eu lieu pendant que
+    // l'overlay tutoriel était affiché, on s'assure qu'il ne bloque pas
+    // la détection du niveau suivant.
+    const tutorialOverlay = document.getElementById("tutorialOverlay");
+    if (tutorialOverlay && tutorialOverlay.style.display === "none") {
+        tutorialOverlayActive = false;
+    }
 
     // Cacher tous les éléments
     const elements = [
@@ -227,7 +271,13 @@ function loadLevel() {
 
     const data = LEVELS[level - 1];
     instruction.innerText = data.instruction;
-    instruction.setAttribute("data-level", level);
+    // Niveau 1 : cacher la zone de jeu — on affiche uniquement l'instruction et le bouton
+    const gameArea = document.getElementById("gameArea");
+    if (level === 1) {
+        gameArea.classList.add("hidden");
+    } else {
+        gameArea.classList.remove("hidden");
+    }
 
     // --- Checklists selon le niveau ---
     const checklists = {
@@ -298,25 +348,33 @@ function loadLevel() {
         textInput.classList.add("idle");
         textInput.classList.remove("typing");
 
-        // Si aucun autre élément visuel n'est affiché, centrer l'inputZone
+        const hasBags = data.show.some(id =>
+            ["redBag","greenBag","blueBag","yellowBag"].includes(id)
+        );
         const hasOtherElements = data.show.some(id =>
             ["cheese","redApple","greenApple","redObject","greenObject",
              "blueObject","redBag","greenBag","blueBag","yellowBag","keyboard"].includes(id)
         );
+
         if (!hasOtherElements) {
+            // Niveau texte seul (28, 29, 30...) → centrer verticalement
             inputZone.style.bottom    = "auto";
             inputZone.style.top       = "50%";
             inputZone.style.transform = "translateX(-50%) translateY(-50%)";
+        } else if (hasBags) {
+            // Niveau avec des sacs en bas → monter la zone de texte
+            // au-dessus des sacs (sacs = bottom:30px, hauteur ~120px)
+            inputZone.style.bottom    = "170px";
+            inputZone.style.top       = "auto";
+            inputZone.style.transform = "translateX(-50%)";
         } else {
+            // Niveau avec objets mais sans sacs → coller en bas
             inputZone.style.bottom    = "18px";
             inputZone.style.top       = "auto";
             inputZone.style.transform = "translateX(-50%)";
         }
 
-        // Donner le focus automatiquement pour que le joueur puisse taper
-        setTimeout(() => {
-            textInput.focus();
-        }, 100);
+        setTimeout(() => { textInput.focus(); }, 100);
     }
 
     // Cacher le bouton valider pour les niveaux à validation automatique
@@ -337,7 +395,9 @@ function loadLevel() {
 
     // --- Actions spéciales selon le niveau ---
     if (data.action === "hover-cheese") {
-        placeCheeseRandom();
+        // Léger délai pour laisser gameArea retrouver sa taille réelle
+        // après la transition CSS (notamment juste après le niveau 1 caché)
+        setTimeout(() => placeCheeseRandom(), 60);
     }
 
     if (data.action === "hover-keyboard" || data.action === "click-key") {
@@ -422,8 +482,16 @@ function placeCheeseRandom() {
     const gameArea  = document.getElementById("gameArea");
     const padding   = 20;
     const cheeseSize = 90;
-    const maxX = gameArea.clientWidth  - cheeseSize - padding;
-    const maxY = gameArea.clientHeight - cheeseSize - padding - 130;
+
+    // Sécurité : si gameArea n'a pas encore retrouvé sa taille réelle
+    // (juste après avoir retiré la classe .hidden, pendant la transition CSS),
+    // clientWidth/clientHeight peuvent valoir 0 ou une valeur transitoire.
+    // On utilise alors la taille de référence connue du jeu (700x500).
+    const width  = gameArea.clientWidth  > 100 ? gameArea.clientWidth  : 700;
+    const height = gameArea.clientHeight > 100 ? gameArea.clientHeight : 500;
+
+    const maxX = Math.max(0, width  - cheeseSize - padding);
+    const maxY = Math.max(0, height - cheeseSize - padding - 130);
     const x = Math.random() * maxX + padding;
     const y = Math.random() * maxY + padding;
     cheese.style.position = "absolute";

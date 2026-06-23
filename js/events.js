@@ -25,6 +25,7 @@ nextBtn.addEventListener("click", () => {
 document.addEventListener("mousemove", (e) => {
 
     if (level !== 2 || mouseMoved) return;
+    if (tutorialOverlayActive) return; // le fromage est caché derrière le tutoriel
 
     const rect = cheese.getBoundingClientRect();
     const inside =
@@ -160,8 +161,8 @@ document.addEventListener("keydown", (e) => {
     }
 
     if (level === 25) {
-        if (/[0-9]/.test(e.key))   nextLevel();
-        else if (/[a-z]/i.test(e.key)) takePenalty();
+        if (/[0-9]/.test(e.key)) nextLevel();
+        // Pas de pénalité sur ce niveau, même en cas de mauvaise touche
         return;
     }
 
@@ -648,18 +649,25 @@ document.addEventListener("mouseup", (e) => {
         }
     }
 
-    // --- NIVEAU 49 : timer trier + écrire ---
+    // --- NIVEAU 49 : trier d'abord, puis écrire seulement une fois le tri terminé ---
     if (level === 49) {
         let ok = false;
         if      (dragging.id === "cheese"     && isOver(yellowBag)) { playDropSound(); dragging.style.display = "none"; objectsPlaced++; ok = true; }
         else if (dragging.id === "redApple"   && isOver(redBag))    { playDropSound(); dragging.style.display = "none"; objectsPlaced++; ok = true; }
         else if (dragging.id === "greenApple" && isOver(greenBag))  { playDropSound(); dragging.style.display = "none"; objectsPlaced++; ok = true; }
         else if (droppedInWrongBag([yellowBag, redBag, greenBag]))   takePenalty();
-        if (ok && wordValidated) checkObjectsPlaced();
-        else if (ok)             updateCounter();
+
+        if (ok) {
+            updateCounter();
+            // Une fois le tri terminé, on révèle la zone de texte
+            if (objectsPlaced >= objectsTotal && inputZone.style.display === "none") {
+                showInputZoneFor49And50();
+                instruction.innerText = "⏱️ Bien joué ! Maintenant écris le mot 'super'";
+            }
+        }
     }
 
-    // --- NIVEAU 50 : trier objets + écrire + clic fromage ---
+    // --- NIVEAU 50 : trier d'abord, puis écrire + clic fromage ---
     if (level === 50) {
         let ok = false;
         if      (dragging === redObject   && isOver(redBag))   { playDropSound(); dragging.style.display = "none"; objectsPlaced++; ok = true; }
@@ -669,7 +677,14 @@ document.addEventListener("mouseup", (e) => {
         if (ok) {
             updateCounter();
             // Étape 0 = "Trie les 3 objets" : validée seulement quand TOUT est trié
-            if (objectsPlaced >= objectsTotal) validateStep(0);
+            if (objectsPlaced >= objectsTotal) {
+                validateStep(0);
+                // Une fois le tri terminé, on révèle la zone de texte
+                if (inputZone.style.display === "none") {
+                    showInputZoneFor49And50();
+                    instruction.innerText = "🏆 Bien joué ! Maintenant écris 'champion'";
+                }
+            }
         }
         // pas de nextLevel ici, il faut aussi le mot + le fromage
     }

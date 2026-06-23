@@ -9,14 +9,17 @@
 
 function saveGame() {
     const data = {
-        level             : level,
-        score             : score,
-        bestScore         : bestScore,
-        currentRank       : currentRank,
-        lives             : lives,
-        comboCount        : comboCount,
-        gameHasHadPenalty : gameHasHadPenalty,
-        savedAt           : new Date().toISOString()
+        level                    : level,
+        score                    : score,
+        bestScore                : bestScore,
+        currentRank              : currentRank,
+        streakPoints             : streakPoints,
+        bonusInventory           : bonusInventory,
+        lastStreakThresholdGiven : lastStreakThresholdGiven,
+        comboBoostStreak         : comboBoostStreak,
+        comboBoostPending        : comboBoostPending,
+        gameHasHadPenalty        : gameHasHadPenalty,
+        savedAt                  : new Date().toISOString()
     };
     try {
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -76,14 +79,18 @@ function formatSaveDate(isoString) {
 // ============================================================
 
 function applySave(data) {
-    level               = data.level             || 1;
-    score               = data.score             || 0;
-    bestScore           = data.bestScore         || 0;
-    currentRank         = data.currentRank       || "Débutant";
-    lives               = data.lives             || 0;
-    comboCount          = data.comboCount        || 0;
-    gameHasHadPenalty   = data.gameHasHadPenalty || false;
-    hadPenaltyThisLevel = false;
+    level                    = data.level                    || 1;
+    score                    = data.score                    || 0;
+    bestScore                = data.bestScore                || 0;
+    currentRank              = data.currentRank              || "Débutant";
+    streakPoints             = data.streakPoints             || 0;
+    bonusInventory           = data.bonusInventory           || [];
+    lastStreakThresholdGiven = data.lastStreakThresholdGiven || 0;
+    comboBoostStreak         = data.comboBoostStreak         || 0;
+    comboBoostPending        = data.comboBoostPending        || false;
+    gameHasHadPenalty        = data.gameHasHadPenalty        || false;
+    hadPenaltyThisLevel      = false;
+    activeBonus              = null; // un bonus actif ne survit pas à une fermeture/reprise
 }
 
 // ============================================================
@@ -130,8 +137,12 @@ function checkSaveOnStart() {
                     <span class="resumeValue" style="color:#ffcc00">${save.currentRank}</span>
                 </div>
                 <div class="resumeLine">
-                    <span class="resumeLabel">Vies</span>
-                    <span class="resumeValue">❤️ × ${save.lives}</span>
+                    <span class="resumeLabel">Série</span>
+                    <span class="resumeValue">🔥 × ${save.streakPoints || 0}</span>
+                </div>
+                <div class="resumeLine">
+                    <span class="resumeLabel">Bonus en stock</span>
+                    <span class="resumeValue">🎁 × ${(save.bonusInventory || []).length}</span>
                 </div>
                 <div class="resumeSavedAt">Sauvegardé le ${formatSaveDate(save.savedAt)}</div>
             </div>
@@ -155,8 +166,9 @@ function checkSaveOnStart() {
 
         updateUI();
         updateBackground();
-        updateLivesDisplay();
-        updateComboDisplay();
+        updateStreakDisplay();
+        updateBonusInventoryDisplay();
+        updateActiveBonusDisplay();
         updateRecordToBeat();
         loadLevel();
         canValidate = true;
@@ -195,14 +207,22 @@ function resetAllProgress() {
     deleteSave();
 
     // 2. Réinitialiser toutes les variables d'état en mémoire
-    level               = 1;
-    score               = 0;
-    bestScore           = 0;
-    currentRank         = "Débutant";
-    lives               = 0;
-    comboCount          = 0;
-    hadPenaltyThisLevel = false;
-    gameHasHadPenalty   = false;
+    level                     = 1;
+    score                     = 0;
+    bestScore                 = 0;
+    currentRank               = "Débutant";
+    gameHasHadPenalty         = false;
+    hadPenaltyThisLevel       = false;
+    streakPoints              = 0;
+    bonusInventory            = [];
+    activeBonus               = null;
+    lastStreakThresholdGiven  = 0;
+    comboBoostStreak          = 0;
+    comboBoostPending         = false;
+    shieldActive              = false;
+    shieldUsesLeft            = 0;
+    doubleXpActive            = false;
+    doubleXpMultiplier        = 1;
 
     // 3. Arrêter tout ce qui pourrait tourner (timer, sons de victoire...)
     stopTimer();
@@ -226,8 +246,9 @@ function resetAllProgress() {
     playButton.innerText = "JOUER";
 
     updateUI();
-    updateLivesDisplay();
-    updateComboDisplay();
+    updateStreakDisplay();
+    updateBonusInventoryDisplay();
+    updateActiveBonusDisplay();
     updateBackground();
 }
 

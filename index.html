@@ -135,9 +135,6 @@
 
     <div id="gameArea">
 
-        <!-- BOUTON SUIVANT (niveau 1) -->
-        <button id="nextBtn" class="arcade-next">CONTINUER</button>
-
         <!-- FROMAGE -->
         <div id="cheese"></div>
 
@@ -185,6 +182,9 @@
         <div id="tutorialSkip">Cliquer pour passer ▶</div>
     </div>
 
+    <!-- BOUTON SUIVANT (niveau 1) — hors de gameArea pour rester visible quand la zone est cachée -->
+    <button id="nextBtn">SUIVANT ▶</button>
+
 </div><!-- fin #gameWindow -->
 
 <!-- =====================
@@ -207,21 +207,30 @@
 </div>
 
 <!-- =====================
-     PANNEAU VIES + RELANCE
+     PANNEAU SÉRIE + ACTIONS
 ===================== -->
 <div id="livesPanel">
-    <div id="livesTitle">VIES</div>
-    <div id="livesDisplay">❤️ × <span id="livesCount">0</span></div>
-    <button id="useLifeBtn" title="Utiliser une vie pour relancer sans perdre de points">
-        🛡️ Vie
-    </button>
-    <button id="restartBtn" title="Relancer le niveau (-10 pts)">
-        🔄 -10pts
+    <div id="livesTitle">ACTIONS</div>
+    <button id="restartBtn" title="Relancer le niveau (gratuit)">
+        🔄 Relancer
     </button>
     <button id="deleteSaveBtn" title="Effacer toute la progression">
         🗑️ Effacer
     </button>
 </div>
+
+<!-- =====================
+     PANNEAU BONUS DÉBLOQUÉS (inventaire)
+===================== -->
+<div id="bonusPanel" style="display:none">
+    <div id="bonusPanelTitle">🎁 BONUS</div>
+    <div id="bonusInventoryList"></div>
+</div>
+
+<!-- =====================
+     BADGE BONUS ACTIF SUR LE NIVEAU EN COURS
+===================== -->
+<div id="activeBonusBadge" style="display:none"></div>
 
 <!-- =====================
      MODALE CONFIRMATION EFFACEMENT
@@ -231,7 +240,7 @@
         <div id="deleteSaveIcon">⚠️</div>
         <div id="deleteSaveTitle">EFFACER LA PROGRESSION ?</div>
         <div id="deleteSaveText">
-            Ton niveau, ton score et tes vies seront <strong>définitivement perdus</strong>.<br>
+            Ton niveau, ton score et tes bonus seront <strong>définitivement perdus</strong>.<br>
             Cette action est irréversible.
         </div>
         <div id="deleteSaveBtns">
@@ -242,7 +251,7 @@
 </div>
 
 <!-- =====================
-     COMBO DISPLAY
+     COMBO DISPLAY (compteur de série, haut à gauche)
 ===================== -->
 <div id="comboDisplay" style="display:none"></div>
 
